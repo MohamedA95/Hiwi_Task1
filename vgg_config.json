@@ -1,11 +1,11 @@
 {
-    "name": "CIFAR_QUANT_VGG",
+    "name": "CIFAR_VGG",
     "n_gpu": 1,
 
     "arch": {
         "type": "VGG_net",
         "args": {
-            "VGG_type":"E"
+            "VGG_type":"A"
         }
     },
     "data_loader": {

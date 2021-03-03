@@ -1,21 +1,21 @@
 {
-    "name": "CIFAR_VGG",
+    "name": "CIFAR_Quant_VGG",
     "n_gpu": 1,
 
     "arch": {
         "type": "QuantVGG",
         "args": {
-            "VGG_type":"E"
+            "VGG_type":"A"
         }
     },
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
             "data_dir": "data/",
-            "batch_size": 200,
+            "batch_size": 32,
             "shuffle": true,
             "validation_split": 0.1,
-            "num_workers": 2,
+            "num_workers": 0,
             "flavor":10
         }
     },
@@ -38,7 +38,7 @@
         }
     },
     "trainer": {
-        "epochs": 25,
+        "epochs": 5,
 
         "save_dir": "saved/",
         "save_period": 1,

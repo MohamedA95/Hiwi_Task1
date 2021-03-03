@@ -1,5 +1,3 @@
-import torch.nn as nn
-
 # BSD 3-Clause License
 # Copyright (c) Alessandro Pappalardo 2019,
 # Copyright (c) Soumith Chintala 2016,
@@ -38,17 +36,18 @@ import torch
 import torch.nn as nn
 from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
 
-__all__ = [
-    'QuantVGG', 'quant_vgg11', 'quant_vgg11_bn', 'quant_vgg13', 'quant_vgg13_bn', 'quant_vgg16', 'quant_vgg16_bn',
-    'quant_vgg19_bn', 'quant_vgg19',
-]
-
+cfgs = {
+    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+}
 
 class QuantVGG(nn.Module):
 
-    def __init__(self, cfg, batch_norm, bit_width=8, num_classes=1000):
+    def __init__(self, VGG_type='A', batch_norm=True, bit_width=8, num_classes=1000):
         super(QuantVGG, self).__init__()
-        self.features = make_layers(cfg, batch_norm, bit_width)
+        self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             make_quant_linear(512 * 7 * 7, 4096, bias=True, bit_width=bit_width),
@@ -80,7 +79,8 @@ class QuantVGG(nn.Module):
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
-                nn.init.constant_(m.bias, 0)
+                if(type(m.bias) == torch.nn.parameter.Parameter):
+                    nn.init.constant_(m.bias, 0)
 
 
 def make_layers(cfg, batch_norm, bit_width):
@@ -101,55 +101,11 @@ def make_layers(cfg, batch_norm, bit_width):
     return nn.Sequential(*layers)
 
 
-cfgs = {
-    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
-}
-
-
-def _quant_vgg(cfg, batch_norm,  **kwargs):
-    model = QuantVGG(cfgs[cfg], batch_norm=batch_norm, **kwargs)
-    return model
-
-
-def quant_vgg11(**kwargs):
-    return _quant_vgg('A', False, **kwargs)
-
-
-def quant_vgg11_bn(**kwargs):
-    return _quant_vgg('A', True, **kwargs)
-
-
-def quant_vgg13(**kwargs):
-    return _quant_vgg('B', False, **kwargs)
-
-
-def quant_vgg13_bn(**kwargs):
-    return _quant_vgg('B', True, **kwargs)
-
-
-def quant_vgg16(**kwargs):
-    return _quant_vgg('D', False, **kwargs)
-
-
-def quant_vgg16_bn(**kwargs):
-    return _quant_vgg('D', True, **kwargs)
-
-
-def quant_vgg19(**kwargs):
-    return _quant_vgg('E', False, **kwargs)
-
-
-def quant_vgg19_bn(**kwargs):
-    return _quant_vgg('E', True, **kwargs)
-
 class VGG_net(nn.Module):
     def __init__(self, in_channels=3, num_classes=1000,VGG_type='A'):
         super(VGG_net, self).__init__()
         self.in_channels = in_channels
-        self.conv_layers = self.create_conv_layers(VGG_types[VGG_type])
+        self.conv_layers = self.create_conv_layers(cfgs[VGG_type])
         self.fcs= nn.Sequential(
             nn.Linear(512*7*7,4096),
             nn.ReLU(),
