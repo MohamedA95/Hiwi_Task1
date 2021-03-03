@@ -1,0 +1,52 @@
+{
+    "name": "CIFAR_QUANT_VGG",
+    "n_gpu": 1,
+
+    "arch": {
+        "type": "VGG_net",
+        "args": {
+            "VGG_type":"E"
+        }
+    },
+    "data_loader": {
+        "type": "CIFAR_data_loader",
+        "args":{
+            "data_dir": "data/",
+            "batch_size": 2,
+            "shuffle": true,
+            "validation_split": 0.1,
+            "num_workers": 2,
+            "flavor":10
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args":{
+            "lr": 0.001,
+            "momentum": 0.9
+        }
+    },
+    "loss": "CrossEntropy",
+    "metrics": [
+        "accuracy", "top_k_acc"
+    ],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 25,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_loss",
+        "early_stop": 2,
+
+        "tensorboard": true
+    }
+}

@@ -1,7 +1,6 @@
 from torchvision import datasets, transforms
 from base import BaseDataLoader
 
-
 class MnistDataLoader(BaseDataLoader):
     """
     MNIST data loading demo using BaseDataLoader
@@ -27,5 +26,4 @@ class CIFAR_data_loader(BaseDataLoader):
             self.dataset = datasets.CIFAR10(data_dir,train=training,download=download,transform=preprocess)
         else:
             self.dataset = datasets.CIFAR100(data_dir,train=training,download=download,transform=preprocess)
-
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)

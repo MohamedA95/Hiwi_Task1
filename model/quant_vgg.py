@@ -1,5 +1,3 @@
-import torch.nn as nn
-
 # BSD 3-Clause License
 # Copyright (c) Alessandro Pappalardo 2019,
 # Copyright (c) Soumith Chintala 2016,
@@ -144,35 +142,3 @@ def quant_vgg19(**kwargs):
 
 def quant_vgg19_bn(**kwargs):
     return _quant_vgg('E', True, **kwargs)
-
-class VGG_net(nn.Module):
-    def __init__(self, in_channels=3, num_classes=1000,VGG_type='A'):
-        super(VGG_net, self).__init__()
-        self.in_channels = in_channels
-        self.conv_layers = self.create_conv_layers(VGG_types[VGG_type])
-        self.fcs= nn.Sequential(
-            nn.Linear(512*7*7,4096),
-            nn.ReLU(),
-            nn.Dropout(p=0.5),
-            nn.Linear(4096,4096),
-            nn.ReLU(),
-            nn.Dropout(p=0.5),
-            nn.Linear(4096,num_classes)
-        )
-    def forward(self, inputs):
-        inputs = self.conv_layers(inputs)
-        inputs = inputs.reshape(inputs.shape[0],-1)
-        inputs = self.fcs(inputs)
-        return inputs
-
-    def create_conv_layers(self, arch):
-        layers = []
-        in_channels = self.in_channels 
-        for layer in arch:
-            if layer == 'M':
-                layers.append(nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)))
-            else:
-                out_channels = layer
-                layers+=[nn.Conv2d(in_channels=in_channels,out_channels=out_channels,kernel_size=3,stride=1,padding=1),nn.BatchNorm2d(layer),nn.ReLU()]
-                in_channels=layer
-        return nn.Sequential(*layers)
