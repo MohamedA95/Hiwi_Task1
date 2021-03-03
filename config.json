@@ -1,18 +1,18 @@
 {
-    "name": "Mnist_LeNet",
+    "name": "CIFAR_VGG",
     "n_gpu": 1,
 
     "arch": {
         "type": "VGG_net",
         "args": {
-            "VGG_type":"A"
+            "VGG_type":"E"
         }
     },
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
             "data_dir": "data/",
-            "batch_size": 4,
+            "batch_size": 200,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 2,
@@ -38,11 +38,11 @@
         }
     },
     "trainer": {
-        "epochs": 5,
+        "epochs": 25,
 
         "save_dir": "saved/",
         "save_period": 1,
-        "verbosity": 2,
+        "verbosity": 1,
         
         "monitor": "min val_loss",
         "early_stop": 2,
