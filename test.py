@@ -6,6 +6,7 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
+from torchsummary import summary
 
 
 def main(config):
@@ -23,7 +24,6 @@ def main(config):
 
     # build model architecture
     model = config.init_obj('arch', module_arch)
-    logger.info(model)
 
     # get function handles of loss and metrics
     loss_fn = getattr(module_loss, config['loss'])
@@ -39,6 +39,7 @@ def main(config):
     # prepare model for testing
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
+    logger.info(summary(model,(3,224,224)))
     model.eval()
 
     total_loss = 0.0

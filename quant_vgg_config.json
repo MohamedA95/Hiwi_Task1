@@ -5,7 +5,7 @@
     "arch": {
         "type": "QuantVGG",
         "args": {
-            "VGG_type":"A"
+            "VGG_type":"D"
         }
     },
     "data_loader": {
@@ -16,7 +16,7 @@
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
-            "flavor":10
+            "flavor":100
         }
     },
     "optimizer": {
@@ -38,15 +38,12 @@
         }
     },
     "trainer": {
-        "epochs": 5,
-
+        "epochs": 10,
         "save_dir": "saved/",
-        "save_period": 1,
-        "verbosity": 1,
-        
+        "save_period": 5,
+        "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 2,
-
-        "tensorboard": true
+        "early_stop": 5,
+        "tensorboard": false
     }
 }

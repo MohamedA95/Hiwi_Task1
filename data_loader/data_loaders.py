@@ -15,7 +15,7 @@ class MnistDataLoader(BaseDataLoader):
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
 
 class CIFAR_data_loader(BaseDataLoader):
-    def __init__(self, data_dir,batch_size=4,download=True, shuffle=True, validation_split=0.1, num_workers=4,flavor=10, training=True):
+    def __init__(self, data_dir,batch_size=4,download=True, shuffle=True, validation_split=0.1, num_workers=0,flavor=10, training=True):
         preprocess = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
