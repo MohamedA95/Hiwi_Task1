@@ -6,7 +6,7 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
-from torchsummary import summary
+# from torchsummary import summary
 
 
 def main(config):
@@ -19,7 +19,7 @@ def main(config):
         shuffle=False,
         validation_split=0.0,
         training=False,
-        num_workers=2
+        num_workers=0
     )
 
     # build model architecture
@@ -39,7 +39,7 @@ def main(config):
     # prepare model for testing
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-    logger.info(summary(model,(3,224,224)))
+    logger.info(model)
     model.eval()
 
     total_loss = 0.0

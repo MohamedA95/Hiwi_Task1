@@ -9,7 +9,7 @@ import model.model as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device
-from torchsummary import summary
+# from torchsummary import summary
 
 
 # fix random seeds for reproducibility
@@ -32,7 +32,8 @@ def main(config):
     device, device_ids = prepare_device(config['n_gpu'])
     model = model.to(device)
     logger.info(config['name'])
-    logger.info(summary(model,(3,224,224)))
+    # logger.info(summary(model,(3,224,224)))
+    logger.info(model)
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
