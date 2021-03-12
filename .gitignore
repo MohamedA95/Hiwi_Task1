@@ -114,3 +114,4 @@ datasets/
 __MACOSX/
 scratch.txt
 config.h
+modelReadingError
