@@ -5,14 +5,15 @@
     "arch": {
         "type": "QuantVGG",
         "args": {
-            "VGG_type":"D"
+            "VGG_type":"D",
+            "batch_norm": false
         }
     },
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
             "data_dir": "data/",
-            "batch_size": 32,
+            "batch_size": 64,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
@@ -38,12 +39,12 @@
         }
     },
     "trainer": {
-        "epochs": 10,
+        "epochs": 200,
         "save_dir": "saved/",
-        "save_period": 5,
-        "verbosity": 2,
-        "monitor": "min val_loss",
-        "early_stop": 5,
+        "save_period": 50,
+        "verbosity": 1,
+        "monitor": "max val_accuracy",
+        "early_stop": -1,
         "tensorboard": false
     }
 }
