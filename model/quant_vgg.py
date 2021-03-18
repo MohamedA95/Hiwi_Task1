@@ -34,7 +34,9 @@
 
 import torch
 import torch.nn as nn
+from brevitas.nn import QuantIdentity
 from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
+from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8ActPerTensorFixedPoint, Int8Bias
 
 cfgs = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -45,8 +47,9 @@ cfgs = {
 
 class QuantVGG(nn.Module):
 
-    def __init__(self, VGG_type='A', batch_norm=True, bit_width=8, num_classes=1000):
+    def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000):
         super(QuantVGG, self).__init__()
+        self.inp_quant = QuantIdentity(act_quant=Int8ActPerTensorFixedPoint, return_quant_tensor=True)
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
@@ -59,10 +62,12 @@ class QuantVGG(nn.Module):
             make_quant_linear(4096, num_classes, bias=False, bit_width=bit_width,
                               weight_scaling_per_output_channel=False),
         )
+        self.conv.cache_inference_quant_out = True
+        self.conv.cache_inference_quant_bias = True
         self._initialize_weights()
 
     def forward(self, x):
-        x = self.features(x)
+        x = self.features(self.inp_quant(x))
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.classifier(x)
@@ -91,7 +96,7 @@ def make_layers(cfg, batch_norm, bit_width):
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
             conv2d = make_quant_conv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1,
-                                       bias=not batch_norm, bit_width=bit_width)
+            weight_quant=Int8WeightPerTensorFixedPoint,bias_quant=Int8Bias,bias=not batch_norm, bit_width=bit_width)
             act = make_quant_relu(bit_width)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), act]
