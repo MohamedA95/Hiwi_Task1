@@ -13,7 +13,7 @@
         "type": "CIFAR_data_loader",
         "args":{
             "data_dir": "data/",
-            "batch_size": 64,
+            "batch_size": 1,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
@@ -39,9 +39,9 @@
         }
     },
     "trainer": {
-        "epochs": 200,
+        "epochs": 1,
         "save_dir": "saved/",
-        "save_period": 50,
+        "save_period": 1,
         "verbosity": 1,
         "monitor": "max val_accuracy",
         "early_stop": -1,

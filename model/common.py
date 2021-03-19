@@ -3,7 +3,7 @@ from brevitas.core.quant import QuantType
 from brevitas.core.restrict_val import RestrictValueType
 from brevitas.core.scaling import ScalingImplType
 from brevitas.core.stats import StatsOp
-
+from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8Bias
 QUANT_TYPE = QuantType.INT
 SCALING_MIN_VAL = 2e-16
 
@@ -34,6 +34,8 @@ def make_quant_conv2d(in_channels,
                       groups,
                       bias,
                       bit_width,
+                      weight_quant=Int8WeightPerTensorFixedPoint,
+                      bias_quant=None,
                       enable_bias_quant=ENABLE_BIAS_QUANT,
                       weight_quant_type=QUANT_TYPE,
                       weight_scaling_impl_type=WEIGHT_SCALING_IMPL_TYPE,
@@ -50,6 +52,8 @@ def make_quant_conv2d(in_channels,
                            padding=padding,
                            stride=stride,
                            bias=bias,
+                           weight_quant=weight_quant,
+                           bias_quant=bias_quant,
                            bias_quant_type=bias_quant_type,
                            compute_output_bit_width=bias and enable_bias_quant,
                            compute_output_scale=bias and enable_bias_quant,

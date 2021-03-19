@@ -28,7 +28,13 @@ def quant_conv2d_parser(layer, file, counter):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "_OA_BITS"), "9999999999999999"))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "_OA_INT_BITS"), "9999999999999999"))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "_BMEM"), "(CONV2D_1_OFM_CH / CONV2D_1_PE)"))
-    file.write("{:<48}{}\n\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "_WMEM"), "((1 * CONV2D_1_K * CONV2D_1_IFM_CH * CONV2D_1_OFM_CH) / (CONV2D_1_PE * CONV2D_1_SIMD)) "))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "_WMEM"), "((1 * CONV2D_1_K * CONV2D_1_IFM_CH * CONV2D_1_OFM_CH) / (CONV2D_1_PE * CONV2D_1_SIMD)) "))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "quant_weight_scale"), str(layer.quant_weight_scale())))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "quant_weight_bit_width"), str(layer.quant_weight_bit_width())))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "quant_bias_scale"), str(layer.quant_bias_scale())))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "quant_bias_bit_width"), str(layer.quant_bias_bit_width())))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "quant_output_scale"), str(layer.quant_output_scale())))
+    file.write("{:<48}{}\n\n".format("{:s}{:d}{:s}".format("#define CONV2D_", counter, "quant_output_bit_width"), str(layer.quant_output_bit_width())))
     
 def maxpool2d_parser(maxpool2d, file, counter):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define MAXPOOL2D_", counter, "_K"), str(maxpool2d.kernel_size)))
@@ -62,6 +68,8 @@ def main():
         model.load_state_dict(torch.load(pth_path)['state_dict'])
     except RuntimeError:
          print("RuntimeError")
+    model.eval()
+    model(torch.randn(1,32,32,3))
     # print("model.children()")
     # for i in model.children():
     #     print("->"+str(type(i)))

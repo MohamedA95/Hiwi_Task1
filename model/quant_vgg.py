@@ -62,8 +62,8 @@ class QuantVGG(nn.Module):
             make_quant_linear(4096, num_classes, bias=False, bit_width=bit_width,
                               weight_scaling_per_output_channel=False),
         )
-        self.conv.cache_inference_quant_out = True
-        self.conv.cache_inference_quant_bias = True
+        self.features.cache_inference_quant_out = True
+        self.features.cache_inference_quant_bias = True
         self._initialize_weights()
 
     def forward(self, x):
@@ -96,7 +96,7 @@ def make_layers(cfg, batch_norm, bit_width):
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
             conv2d = make_quant_conv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1,
-            weight_quant=Int8WeightPerTensorFixedPoint,bias_quant=Int8Bias,bias=not batch_norm, bit_width=bit_width)
+            bias=not batch_norm, bit_width=bit_width,weight_quant=Int8WeightPerTensorFixedPoint,bias_quant=Int8Bias)
             act = make_quant_relu(bit_width)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), act]
