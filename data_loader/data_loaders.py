@@ -1,6 +1,7 @@
 from torchvision import datasets, transforms
 from base import BaseDataLoader
-
+import os.path
+import torch
 class MnistDataLoader(BaseDataLoader):
     """
     MNIST data loading demo using BaseDataLoader
@@ -27,3 +28,31 @@ class CIFAR_data_loader(BaseDataLoader):
         else:
             self.dataset = datasets.CIFAR100(data_dir,train=training,download=download,transform=preprocess)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
+# Based on https://github.com/pytorch/examples/blob/master/imagenet/main.py
+class ImageNet_data_loader(BaseDataLoader):
+    def __init__(self, data_dir, batch_size, shuffle, num_workers,pin_memory):
+        traindir = os.path.join(data_dir, 'train')
+        valdir = os.path.join(data_dir, 'val')
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+        train_dataset = datasets.ImageFolder(
+            traindir,
+            transforms.Compose([
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+            ]))
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+
+        val_loader = torch.utils.data.DataLoader(
+            datasets.ImageFolder(valdir, transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize,
+            ])),
+            batch_size=batch_size, shuffle=False,
+            num_workers=num_workers, pin_memory=pin_memory)
+
+    def split_validation(self):
+        return val_loader
