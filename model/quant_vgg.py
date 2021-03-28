@@ -45,15 +45,16 @@ cfgs = {
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
+
 class QuantVGG(nn.Module):
 
     def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000):
         super(QuantVGG, self).__init__()
-        self.inp_quant = QuantIdentity(act_quant=Int8ActPerTensorFixedPoint, return_quant_tensor=True)
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
-            make_quant_linear(512 * 7 * 7, 4096, bias=True, bit_width=bit_width),
+            make_quant_linear(512 * 7 * 7, 4096, bias=True,
+                              bit_width=bit_width),
             make_quant_relu(bit_width),
             nn.Dropout(),
             make_quant_linear(4096, 4096, bias=True, bit_width=bit_width),
@@ -62,12 +63,10 @@ class QuantVGG(nn.Module):
             make_quant_linear(4096, num_classes, bias=False, bit_width=bit_width,
                               weight_scaling_per_output_channel=False),
         )
-        self.features.cache_inference_quant_out = True
-        self.features.cache_inference_quant_bias = True
         self._initialize_weights()
 
     def forward(self, x):
-        x = self.features(self.inp_quant(x))
+        x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.classifier(x)
@@ -76,7 +75,8 @@ class QuantVGG(nn.Module):
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
@@ -95,8 +95,10 @@ def make_layers(cfg, batch_norm, bit_width):
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
-            conv2d = make_quant_conv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1,
-            bias=not batch_norm, bit_width=bit_width,weight_quant=Int8WeightPerTensorFixedPoint,bias_quant=Int8Bias)
+            conv2d = make_quant_conv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1, bias=not batch_norm, 
+            bit_width=bit_width, weight_quant=Int8WeightPerTensorFixedPoint,bias_quant=Int8Bias)
+            conv2d.cache_inference_quant_out = True
+            conv2d.cache_inference_quant_bias = True
             act = make_quant_relu(bit_width)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), act]
