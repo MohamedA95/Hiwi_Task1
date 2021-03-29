@@ -30,7 +30,9 @@ class CIFAR_data_loader(BaseDataLoader):
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
 # Based on https://github.com/pytorch/examples/blob/master/imagenet/main.py
 class ImageNet_data_loader(BaseDataLoader):
+    val_loader=None
     def __init__(self, data_dir, batch_size, shuffle, num_workers,pin_memory):
+        global val_loader
         traindir = os.path.join(data_dir, 'train')
         valdir = os.path.join(data_dir, 'val')
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
