@@ -46,5 +46,6 @@
         "monitor": "max val_accuracy",
         "early_stop": -1,
         "tensorboard": false
-    }
+    },
+    "extract" : true
 }

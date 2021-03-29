@@ -6,12 +6,16 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
-# from torchsummary import summary
+from utils import parameters_extractor
 
 
 def main(config):
     logger = config.get_logger('test')
-
+    print(config.__dict__)
+    exit()
+    if config['extract'] is not None:
+        logger.info("Found it")
+        exit()
     # setup data_loader instances
     data_loader = getattr(module_data, config['data_loader']['type'])(
         config['data_loader']['args']['data_dir'],
@@ -66,6 +70,8 @@ def main(config):
     log.update({
         met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)
     })
+    logger.info("Extracting Parameters\nParameters File:")
+    logger.info(parameters_extractor(model))
     logger.info(log)
 
 
@@ -77,6 +83,7 @@ if __name__ == '__main__':
                       help='path to latest checkpoint (default: None)')
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
+    args.add_argument('-x', '--extract', help='extract parameters of the model', default=False, type=bool, nargs='?')
 
     config = ConfigParser.from_args(args)
     main(config)
