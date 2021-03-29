@@ -20,7 +20,7 @@ def quant_conv2d_parser(layer, file):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_PE"), "1"))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_SIMD"), "1"))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_BITS"), layer.quant_bias_bit_width() if layer.quant_bias_bit_width() is not None else "0"))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_INT_BITS"), "1!"))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_INT_BITS"), ))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WEIGHT_BITS"), layer.quant_weight_bit_width()))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WEIGHT_INT_BITS"), "1!"))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_IA_BITS"), "{}OA_BITS".format(pre_layer) if conv2d_counter > 0 else "8!" ))
@@ -65,7 +65,7 @@ def fullyconn_parser(layer,file):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IFM_DIM"), "1!" if fullyconn_counter > 0 else "({}OFM_DIM".format(pre_layer)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IA_BITS"), "{}OA_BITS".format(pre_layer)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IA_INT_BITS"), "{}OA_INT_BITS".format(pre_layer)))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_OFM_CH"), layer.))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_OFM_CH"), layer.out_channels))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_PE"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_SIMD"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_BIAS_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
@@ -91,31 +91,15 @@ def main():
          print("RuntimeError")
     model.eval()
     model(torch.randn(1,3,32,32))
-    # print("model.children()")
-    # for i in model.children():
-    #     print("->"+str(type(i)))
-    #     try:
-    #         for j in i:
-    #             print(type(j))
-    #     except:
-    #         print("Error")
-    #         pass            
-    # print("---------------------------------------------------")
-    # print("model.modules()")
-    # for i in model.modules():
-    #     print(type(i))
-    # print("---------------------------------------------------")
-    # print("model.parameters()")
-    # for i in model.parameters():
-    #     print(type(i))
-    # exit()
-    # sequantial_container = next(model.children())
     with open('config.h', 'w') as file_object:
         global conv2d_counter
         global maxpool2d_counter
         global quantrelue_counter
+        global fullyconn_counter
         global pre_layer
+        
         file_object.write("#ifndef CONFIG_H_\n#define CONFIG_H_\n\n")
+        # Extract Features layers Data
         for i in model.features:
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                 quant_conv2d_parser(i, file_object)
@@ -129,9 +113,18 @@ def main():
                 quantReLU_parser(i,file_object)
                 pre_layer="RELU_{}_".format(quantrelue_counter)
                 quantrelue_counter+=1
-            
+        # Extract classifier layers Data
+        for i in model.classifier:
+            if isinstance(i,brevitas.nn.QuantLinear):
+                fullyconn_parser(i, file_object)
+                pre_layer="FC_{}_".format(fullyconn_counter)
+                fullyconn_counter += 1
+            elif isinstance(i,brevitas.nn.quant_activation.QuantReLU):
+                quantReLU_parser(i,file_object)
+                pre_layer="RELU_{}_".format(quantrelue_counter)
+                quantrelue_counter+=1
+        # Extract Conv layers Weight & Bias   
         conv2d_counter=0
-        maxpool2d_counter=0
         for i in model.features:
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                 file_object.write("QuantConv2d_{}_WEIGHT\n".format(conv2d_counter))
@@ -140,6 +133,19 @@ def main():
                     file_object.write("QuantConv2d_{}_BIAS\n".format(conv2d_counter))
                     file_object.write(str(i.bias.data))
                 conv2d_counter += 1
+
+        # Extract Fully Connected layers Weight & Bias   
+        fullyconn_counter=0
+        for i in model.features:
+            if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
+                file_object.write("FullyConnected_{}_WEIGHT\n".format(fullyconn_counter))
+                file_object.write(str(i.weight.data))
+                file_object.write("\n")
+                if i.bias is not None:
+                    file_object.write("FullyConnected_{}_BIAS\n".format(fullyconn_counter))
+                    file_object.write(str(i.bias.data))
+                    file_object.write("\n")
+                fullyconn_counter += 1
 
     print("Result:")
     print(str(pathlib.Path(__file__).parent.absolute())+"/config.h")

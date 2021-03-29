@@ -18,7 +18,7 @@ INPUT_QUANTIZER=Int8ActPerTensorFixedPoint
 WEIGHT_SCALING_IMPL_TYPE = ScalingImplType.STATS
 WEIGHT_SCALING_PER_OUTPUT_CHANNEL = False # Each channel in each layer would have it's own scale 
 WEIGHT_SCALING_STATS_OP = StatsOp.MAX
-WEIGHT_RESTRICT_SCALING_TYPE = RestrictValueType.LOG_FP # Allows the scale to be non integer
+WEIGHT_RESTRICT_SCALING_TYPE = RestrictValueType.POWER_OF_TWO # Allows the scale to be non integer
 WEIGHT_NARROW_RANGE = True
 
 ENABLE_BIAS_QUANT = True
