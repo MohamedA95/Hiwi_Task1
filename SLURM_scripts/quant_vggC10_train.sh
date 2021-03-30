@@ -11,5 +11,5 @@
 echo "Executing on $HOSTNAME"
 module load nvidia/latest
 module load cudnn/latest 
-python3 /home/mmoursi/Hiwi_Task1/train.py -c /home/mmoursi/Hiwi_Task1/config_sh/quant_vggC10_config.json
+python3 /home/mmoursi/Hiwi_Task1/train.py -c /home/mmoursi/Hiwi_Task1/config_json/quant_vggC10_config.json
 
