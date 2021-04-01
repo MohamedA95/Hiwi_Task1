@@ -1,11 +1,12 @@
 {
-    "name": "CIFAR_VGG",
+    "name": "CIFAR10_VGG",
     "n_gpu": 1,
 
     "arch": {
         "type": "VGG_net",
         "args": {
-            "VGG_type":"D"
+            "VGG_type":"D",
+            "batch_norm": false
         }
     },
     "data_loader": {
@@ -16,7 +17,7 @@
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
-            "flavor":100
+            "flavor":10
         }
     },
     "optimizer": {
@@ -42,8 +43,8 @@
         "save_dir": "saved/",
         "save_period": 5,
         "verbosity": 2,
-        "monitor": "min val_loss",
-        "early_stop": 5,
+        "monitor": "max val_accuracy",
+        "early_stop": -1,
         "tensorboard": false
     }
 }

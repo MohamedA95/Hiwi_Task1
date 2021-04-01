@@ -9,10 +9,10 @@ cfgs = {
 }
 
 class VGG_net(nn.Module):
-    def __init__(self, in_channels=3, num_classes=1000,VGG_type='A'):
+    def __init__(self, in_channels=3, num_classes=1000,VGG_type='A',batch_norm=False):
         super(VGG_net, self).__init__()
         self.in_channels = in_channels
-        self.conv_layers = self.create_conv_layers(cfgs[VGG_type])
+        self.conv_layers = self.create_conv_layers(cfgs[VGG_type],batch_norm)
         self.fcs= nn.Sequential(
             nn.Linear(512*7*7,4096),
             nn.ReLU(),
@@ -28,14 +28,20 @@ class VGG_net(nn.Module):
         inputs = self.fcs(inputs)
         return inputs
 
-    def create_conv_layers(self, arch):
+    def create_conv_layers(self, arch,batch_norm):
         layers = []
         in_channels = self.in_channels 
         for layer in arch:
             if layer == 'M':
                 layers.append(nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)))
             else:
-                out_channels = layer
-                layers+=[nn.Conv2d(in_channels=in_channels,out_channels=out_channels,kernel_size=3,stride=1,padding=1),nn.BatchNorm2d(layer),nn.ReLU()]
-                in_channels=layer
+                if batch_norm:
+                    out_channels = layer
+                    layers+=[nn.Conv2d(in_channels=in_channels,out_channels=out_channels,kernel_size=3,stride=1,padding=1),nn.BatchNorm2d(layer),nn.ReLU()]
+                    in_channels=layer
+                else:
+                    out_channels = layer
+                    layers+=[nn.Conv2d(in_channels=in_channels,out_channels=out_channels,kernel_size=3,stride=1,padding=1),nn.ReLU()]
+                    in_channels=layer
+                
         return nn.Sequential(*layers)
