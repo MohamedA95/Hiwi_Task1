@@ -1,7 +1,8 @@
 import torch
 import pathlib
 import brevitas
-from model.quant_vgg import QuantVGG
+import sys
+from ..model import QuantVGG
 
 conv2d_counter = 0
 maxpool2d_counter = 0
@@ -81,13 +82,6 @@ def fullyconn_parser(layer,file):
 
 
 def parameters_extractor(model):
-    # model=QuantVGG(VGG_type='A', batch_norm=True, bit_width=8, num_classes=1000)
-    # try:
-    #     model.load_state_dict(torch.load(pth_path)['state_dict'])
-    # except RuntimeError:
-    #      print("RuntimeError")
-    # model.eval()
-    # model(torch.randn(1,3,32,32))
     with open('config.h', 'w') as file_object:
         global conv2d_counter
         global maxpool2d_counter
@@ -126,9 +120,11 @@ def parameters_extractor(model):
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                 file_object.write("QuantConv2d_{}_WEIGHT\n".format(conv2d_counter))
                 file_object.write(str(i.weight.data))
+                file_object.write("\n")
                 if i.bias is not None:
                     file_object.write("QuantConv2d_{}_BIAS\n".format(conv2d_counter))
                     file_object.write(str(i.bias.data))
+                    file_object.write("\n")
                 conv2d_counter += 1
 
         # Extract Fully Connected layers Weight & Bias   

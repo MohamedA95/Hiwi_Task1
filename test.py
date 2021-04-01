@@ -11,11 +11,6 @@ from utils import parameters_extractor
 
 def main(config):
     logger = config.get_logger('test')
-    print(config.__dict__)
-    exit()
-    if config['extract'] is not None:
-        logger.info("Found it")
-        exit()
     # setup data_loader instances
     data_loader = getattr(module_data, config['data_loader']['type'])(
         config['data_loader']['args']['data_dir'],
