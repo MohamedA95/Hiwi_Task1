@@ -13,7 +13,7 @@
         "type": "ImageNet_data_loader",
         "args":{
             "data_dir": "/scratch/mmoursi/",
-            "batch_size": 256,
+            "batch_size": 128,
             "shuffle": true,
             "num_workers": 2,
             "pin_memory": true
@@ -38,7 +38,7 @@
         }
     },
     "trainer": {
-        "epochs": 300,
+        "epochs": 90,
         "save_dir": "saved/",
         "save_period": 50,
         "verbosity": 1,
