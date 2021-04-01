@@ -53,8 +53,7 @@ class QuantVGG(nn.Module):
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
-            make_quant_linear(512 * 7 * 7, 4096, bias=True,
-                              bit_width=bit_width),
+            make_quant_linear(512 * 7 * 7, 4096, bias=True, bit_width=bit_width),
             make_quant_relu(bit_width),
             nn.Dropout(),
             make_quant_linear(4096, 4096, bias=True, bit_width=bit_width),
@@ -106,3 +105,6 @@ def make_layers(cfg, batch_norm, bit_width):
                 layers += [conv2d, act]
             in_channels = v
     return nn.Sequential(*layers)
+
+# in make layers weight_quant & bias_quant 
+# cache_inference_quant_out & cache_inference_quant_bias
