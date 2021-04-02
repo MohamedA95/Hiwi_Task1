@@ -12,7 +12,7 @@ ACT_SCALING_IMPL_TYPE = ScalingImplType.PARAMETER
 ACT_SCALING_PER_CHANNEL = False
 ACT_SCALING_RESTRICT_SCALING_TYPE = RestrictValueType.LOG_FP
 ACT_MAX_VAL = 6.0
-ACT_RETURN_QUANT_TENSOR = False
+ACT_RETURN_QUANT_TENSOR = True # Custom
 ACT_PER_CHANNEL_BROADCASTABLE_SHAPE = None
 HARD_TANH_THRESHOLD = 10.0
 
@@ -21,7 +21,7 @@ WEIGHT_SCALING_PER_OUTPUT_CHANNEL = False # Each channel in each layer would hav
 WEIGHT_SCALING_STATS_OP = StatsOp.MAX
 WEIGHT_RESTRICT_SCALING_TYPE = RestrictValueType.POWER_OF_TWO # Allows the scale to be non integer
 WEIGHT_NARROW_RANGE = True
-
+OUTPUT_QUANTIZER=Int8ActPerTensorFixedPoint
 ENABLE_BIAS_QUANT = True # enable bias quantization, diabled by default
 
 HADAMARD_FIXED_SCALE = False
@@ -65,7 +65,9 @@ def make_quant_conv2d(in_channels,
                            weight_scaling_per_output_channel=weight_scaling_per_output_channel,
                            weight_restrict_scaling_type=weight_restrict_scaling_type,
                            weight_narrow_range=weight_narrow_range,
-                           weight_scaling_min_val=weight_scaling_min_val)
+                           weight_scaling_min_val=weight_scaling_min_val,
+                           output_quant=OUTPUT_QUANTIZER, #Custom
+                           return_quant_tensor=True) #Custom
 
 
 def make_quant_linear(in_channels,
@@ -113,7 +115,8 @@ def make_quant_relu(bit_width,
                          scaling_min_val=scaling_min_val,
                          max_val=max_val,
                          return_quant_tensor=return_quant_tensor,
-                         per_channel_broadcastable_shape=per_channel_broadcastable_shape)
+                         per_channel_broadcastable_shape=per_channel_broadcastable_shape,
+                         output_quant=OUTPUT_QUANTIZER) #Custom
 
 
 def make_quant_hard_tanh(bit_width,

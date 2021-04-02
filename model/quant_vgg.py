@@ -50,6 +50,7 @@ class QuantVGG(nn.Module):
 
     def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000):
         super(QuantVGG, self).__init__()
+        self.inp_quant = QuantIdentity(act_quant=Int8ActPerTensorFixedPoint, return_quant_tensor=True) #custom
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
@@ -65,7 +66,7 @@ class QuantVGG(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
-        x = self.features(x)
+        x = self.features(self.inp_quant(x)) #custom
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.classifier(x)
@@ -105,6 +106,3 @@ def make_layers(cfg, batch_norm, bit_width):
                 layers += [conv2d, act]
             in_channels = v
     return nn.Sequential(*layers)
-
-# in make layers weight_quant & bias_quant 
-# cache_inference_quant_out & cache_inference_quant_bias
