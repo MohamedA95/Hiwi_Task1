@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:V100:1
 #SBATCH --mem=4096
 #SBATCH --mail-type=BEGIN,END
-#SBATCH --time 5:00:00
+#SBATCH --time 2-0
 
 echo "Executing on $HOSTNAME"
 date

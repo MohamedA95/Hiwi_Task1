@@ -6,18 +6,18 @@
         "type": "VGG_net",
         "args": {
             "VGG_type":"D",
-            "batch_norm": false
+            "batch_norm": true
         }
     },
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
             "data_dir": "data/",
-            "batch_size": 64,
+            "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
-            "flavor":10
+            "flavor":100
         }
     },
     "optimizer": {
@@ -39,9 +39,9 @@
         }
     },
     "trainer": {
-        "epochs": 20,
+        "epochs": 200,
         "save_dir": "saved/",
-        "save_period": 5,
+        "save_period": 50,
         "verbosity": 2,
         "monitor": "max val_accuracy",
         "early_stop": -1,
