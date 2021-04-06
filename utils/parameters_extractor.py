@@ -1,8 +1,7 @@
 import torch
 import pathlib
 import brevitas
-import sys
-from ..model import QuantVGG
+
 
 conv2d_counter = 0
 maxpool2d_counter = 0
@@ -18,8 +17,9 @@ def quant_conv2d_parser(layer, file):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_OFM_DIM"), "((CONV2D_{0}_IFM_DIM - CONV2D_{0}_K + 2 * CONV2D_{0}_PADDING) / CONV2D_{0}_STRIDE + 1)".format(conv2d_counter)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_PE"), "1"))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_SIMD"), "1"))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_BITS"), layer.quant_bias_bit_width() if layer.quant_bias_bit_width() is not None else "0"))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_INT_BITS"), int(layer.quant_bias_bit_width()+torch.log2(layer.quant_bias_scale()))))
+    if layer.is_bias_quant_enabled:
+        file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_BITS"), layer.quant_bias_bit_width() if layer.quant_bias_bit_width() is not None else "0"))
+        file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_INT_BITS"), int(layer.quant_bias_bit_width()+torch.log2(layer.quant_bias_scale()))))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WEIGHT_BITS"), layer.quant_weight_bit_width()))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WEIGHT_INT_BITS"), int(layer.quant_weight_bit_width()+torch.log2(layer.quant_weight_scale()))))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_IA_BITS"), "{}OA_BITS".format(pre_layer) if conv2d_counter > 0 else "8!" ))
@@ -118,13 +118,28 @@ def parameters_extractor(model):
         conv2d_counter=0
         for i in model.features:
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
-                file_object.write("QuantConv2d_{}_WEIGHT\n".format(conv2d_counter))
-                file_object.write(str(i.weight.data))
-                file_object.write("\n")
-                if i.bias is not None:
-                    file_object.write("QuantConv2d_{}_BIAS\n".format(conv2d_counter))
-                    file_object.write(str(i.bias.data))
-                    file_object.write("\n")
+                file_object.write("static ap_uint<CONV2D_{0}_WEIGHT_BITS> conv2d_{0}_weight [CONV2D_{0}_PE] [CONV2D_{0}_SIMD] [CONV2D_{0}_WMEM] =\n".format(conv2d_counter))
+                file_object.write("{\n")
+                for j in i.quant_weight():
+                    file_object.write("{\n")
+                    for k in j:
+                        file_object.write("{\n")
+                        for r in k:
+                            file_object.write("{")
+                            for m in r[0:-1]: 
+                                file_object.write("{:.5}, ".format(m))
+                            file_object.write("{:.5}}}\n".format(r[-1]))
+                        file_object.write("};\n")
+                    file_object.write("};\n")
+                file_object.write("};\n")
+
+                if i.is_bias_quant_enabled:
+                    file_object.write("static ap_uint<CONV2D_{0}_BIAS_BITS> conv2d_{0}_bias [CONV2D_{0}_PE][CONV2D_{0}_BMEM] =\n".format(conv2d_counter))
+                    file_object.write("{\n{\n")
+                    for j in i.quant_bias()[0:-1]:
+                        file_object.write("{:.5},\n".format(j))
+                    file_object.write("{:.5}\n".format(i.quant_bias()[-1]))
+                    file_object.write("}\n};\n")
                 conv2d_counter += 1
 
         # Extract Fully Connected layers Weight & Bias   
@@ -132,12 +147,11 @@ def parameters_extractor(model):
         for i in model.features:
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                 file_object.write("FullyConnected_{}_WEIGHT\n".format(fullyconn_counter))
-                file_object.write(str(i.weight.data))
+                file_object.write(str(i.quant_weight()))
                 file_object.write("\n")
                 if i.bias is not None:
                     file_object.write("FullyConnected_{}_BIAS\n".format(fullyconn_counter))
-                    file_object.write(str(i.bias.data))
+                    file_object.write(str(i.quant_bias()))
                     file_object.write("\n")
                 fullyconn_counter += 1
-
     return str(pathlib.Path(__file__).parent.absolute())+"/config.h"
