@@ -13,17 +13,17 @@
         "type": "CIFAR_data_loader",
         "args":{
             "data_dir": "data/",
-            "batch_size": 128,
+            "batch_size": 256,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
-            "flavor":100
+            "flavor":10
         }
     },
     "optimizer": {
         "type": "SGD",
         "args":{
-            "lr": 0.001,
+            "lr": 0.1,
             "momentum": 0.9
         }
     },
@@ -32,17 +32,17 @@
         "accuracy", "top_k_acc"
     ],
     "lr_scheduler": {
-        "type": "StepLR",
+        "type": "ReduceLROnPlateau",
         "args": {
-            "step_size": 50,
-            "gamma": 0.1
+            "mode": "max",
+            "factor": 0.1
         }
     },
     "trainer": {
-        "epochs": 200,
+        "epochs": 150,
         "save_dir": "saved/",
-        "save_period": 50,
-        "verbosity": 2,
+        "save_period": 150,
+        "verbosity": 1,
         "monitor": "max val_accuracy",
         "early_stop": -1,
         "tensorboard": false

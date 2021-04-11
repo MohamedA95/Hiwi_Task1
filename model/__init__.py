@@ -1,1 +1,2 @@
-from .model import *
+from .vgg import *
+from .quant_vgg import *

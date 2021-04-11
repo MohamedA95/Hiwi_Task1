@@ -30,6 +30,7 @@
 
 # Based on the torchvision implementation
 # https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py
+# https://github.com/Xilinx/brevitas/blob/961c86936c8423924337093cee7c93e29873e894/src/brevitas_examples/imagenet_classification/models/vgg.py
 
 
 import torch
@@ -37,6 +38,7 @@ import torch.nn as nn
 from brevitas.nn import QuantIdentity
 from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8ActPerTensorFixedPoint, Int8Bias
+from base import BaseModel
 
 cfgs = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -46,7 +48,7 @@ cfgs = {
 }
 
 
-class QuantVGG(nn.Module):
+class QuantVGG(BaseModel):
 
     def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000):
         super(QuantVGG, self).__init__()
