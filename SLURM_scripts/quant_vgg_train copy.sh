@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH -J OriginalQVGGTRC10
+#SBATCH -J OriginalQVGGTRC100
 #SBATCH -N 1
-#SBATCH -o /home/mmoursi/Hiwi_Task1/res/OriginalQVGGTRC10.out
-#SBATCH -e /home/mmoursi/Hiwi_Task1/res/OriginalQVGGTRC10.err
+#SBATCH -o /home/mmoursi/Hiwi_Task1/res/OriginalQVGGTRC100.out
+#SBATCH -e /home/mmoursi/Hiwi_Task1/res/OriginalQVGGTRC100.err
 #SBATCH --gres=gpu:V100:1
 #SBATCH --mem=4096
 #SBATCH --mail-type=BEGIN,END
-#SBATCH --time 6:00:00
+#SBATCH --time 60:00:00
 
 echo "Executing on $HOSTNAME"
 date

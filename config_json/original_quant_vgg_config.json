@@ -1,5 +1,5 @@
 {
-    "name": "CIFAR10_QVGG_Original",
+    "name": "C100_QVGG_Original",
     "n_gpu": 1,
 
     "arch": {
@@ -17,7 +17,7 @@
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
-            "flavor":10
+            "flavor":100
         }
     },
     "optimizer": {
@@ -39,9 +39,9 @@
         }
     },
     "trainer": {
-        "epochs": 10,
+        "epochs": 100,
         "save_dir": "saved/",
-        "save_period": 5,
+        "save_period": 100,
         "verbosity": 1,
         "monitor": "max val_accuracy",
         "early_stop": -1,
