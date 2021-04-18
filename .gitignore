@@ -116,3 +116,4 @@ scratch.txt
 config.h
 modelReadingError
 scratch.py
+QuantVGG_config.h
