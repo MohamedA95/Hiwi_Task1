@@ -173,4 +173,4 @@ def parameters_extractor(model,ext_config):
                     file_object.write(("{:#04x}}}\n" if i.int_bias()[-1]>0 else "{:#05x}}}\n").format(i.int_bias()[-1]))
                     file_object.write(";\n")
                 fullyconn_counter += 1
-    return "{}/{}_config.h".format(str(pathlib.Path(__file__).parent.absolute()),type(model).__name__)
+    return "{}_config.h".format(type(model).__name__)

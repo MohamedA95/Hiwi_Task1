@@ -68,7 +68,7 @@ def main(config):
     })
     if 'extract' in config._config:
         if str2bool(config['extract']):
-            logger.info("Extracting Parameters\nParameters File:")
+            logger.info("Extracting Parameters\n")
             logger.info(parameters_extractor(model,config['extractor']))
     logger.info(log)
 
