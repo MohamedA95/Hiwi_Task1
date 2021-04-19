@@ -69,7 +69,10 @@ class Trainer(BaseTrainer):
             log.update(**{'val_'+k : v for k, v in val_log.items()})
 
         if self.lr_scheduler is not None:
-            self.lr_scheduler.step()
+            if isinstance(self.lr_scheduler,torch.optim.lr_scheduler.ReduceLROnPlateau):
+                self.lr_scheduler.step(log['val_accuracy'])
+            else:
+                self.lr_scheduler.step()
         return log
 
     def _valid_epoch(self, epoch):

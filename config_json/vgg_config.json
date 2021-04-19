@@ -12,7 +12,7 @@
     "data_loader": {
         "type": "ImageNet_data_loader",
         "args":{
-            "data_dir": "data/",
+            "data_dir": "imgNet/",
             "batch_size": 8,
             "shuffle": true,
             "num_workers": 0,
@@ -31,10 +31,10 @@
         "accuracy", "top_k_acc"
     ],
     "lr_scheduler": {
-        "type": "StepLR",
+        "type": "ReduceLROnPlateau",
         "args": {
-            "step_size": 50,
-            "gamma": 0.1
+            "mode":"max",
+            "verbose":true
         }
     },
     "trainer": {
