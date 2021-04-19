@@ -138,8 +138,8 @@ def parameters_extractor(model,ext_config):
                         for r in k:
                             file_object.write("{")
                             for m in r[0:-1]: 
-                                file_object.write(("{:#04x}, " if m>0 else "{:#05x}, ").format(m))
-                            file_object.write(("{:#04x}}},\n" if r[-1]>0 else "{:#05x}}},\n").format(r[-1]))
+                                file_object.write(("{:02x}, " if m>0 else "{:03x}, ").format(m))
+                            file_object.write(("{:02x}}},\n" if r[-1]>0 else "{:03x}}},\n").format(r[-1]))
                         file_object.write("};\n")
                     file_object.write("};\n")
                 file_object.write("};\n")
@@ -148,8 +148,8 @@ def parameters_extractor(model,ext_config):
                     file_object.write("static ap_uint<CONV2D_{0}_BIAS_BITS> conv2d_{0}_bias [CONV2D_{0}_PE][CONV2D_{0}_BMEM] =\n".format(conv2d_counter))
                     file_object.write("{\n{\n")
                     for j in i.int_bias()[0:-1]:
-                        file_object.write(("{:#04x},\n" if j>0 else "{:#05x},\n").format(j))
-                    file_object.write(("{:#04x}\n" if i.int_bias()[-1]>0 else "{:#05x}\n").format(i.int_bias()[-1]))
+                        file_object.write(("{:02x},\n" if j>0 else "{:03x},\n").format(j))
+                    file_object.write(("{:02x}\n" if i.int_bias()[-1]>0 else "{:03x}\n").format(i.int_bias()[-1]))
                     file_object.write("}\n};\n")
                 conv2d_counter += 1
 
@@ -163,14 +163,14 @@ def parameters_extractor(model,ext_config):
                 for row in i.int_weight():
                     file_object.write("{")
                     for val in row[0:-1]:
-                        file_object.write(("{:#04x}, " if val>0 else "{:#05x}, ").format(val))
-                    file_object.write(("{:#04x}}};\n" if row[-1]>0 else "{:#05x}}};\n").format(row[-1]))
+                        file_object.write(("{:02x}, " if val>0 else "{:03x}, ").format(val))
+                    file_object.write(("{:02x}}};\n" if row[-1]>0 else "{:03x}}};\n").format(row[-1]))
                 file_object.write("\n")
                 if i.is_bias_quant_enabled:
                     file_object.write("FullyConnected_{}_BIAS\n{\n".format(fullyconn_counter))
                     for val in i.int_bias()[0:-1]:
-                        file_object.write(("{:#04x}, " if val>0 else "{:#05x}, ").format(val))
-                    file_object.write(("{:#04x}}}\n" if i.int_bias()[-1]>0 else "{:#05x}}}\n").format(i.int_bias()[-1]))
+                        file_object.write(("{:02x}, " if val>0 else "{:03x}, ").format(val))
+                    file_object.write(("{:02x}}}\n" if i.int_bias()[-1]>0 else "{:03x}}}\n").format(i.int_bias()[-1]))
                     file_object.write(";\n")
                 fullyconn_counter += 1
     return "{}_config.h".format(type(model).__name__)
