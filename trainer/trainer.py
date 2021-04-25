@@ -70,7 +70,7 @@ class Trainer(BaseTrainer):
 
         if self.lr_scheduler is not None:
             if isinstance(self.lr_scheduler,torch.optim.lr_scheduler.ReduceLROnPlateau):
-                self.lr_scheduler.step(log['loss'])
+                self.lr_scheduler.step(log[self.config['lr_scheduler']['metric']])
             else:
                 self.lr_scheduler.step()
         return log
