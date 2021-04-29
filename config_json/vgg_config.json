@@ -21,8 +21,9 @@
     "optimizer": {
         "type": "SGD",
         "args":{
-            "lr": 0.1,
-            "momentum": 0.9
+            "lr": 0.01,
+            "momentum": 0.9,
+            "weight_decay": 0.0005
         }
     },
     "loss": "CrossEntropy",
@@ -32,9 +33,11 @@
     "lr_scheduler": {
         "type": "ReduceLROnPlateau",
         "args": {
-            "verbose":true
+            "mode": "max",
+            "factor": 0.1,
+            "verbose": true
         },
-        "metric":"val_loss"
+        "metric":"val_accuracy"
     },
     "trainer": {
         "epochs": 100,
