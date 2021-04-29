@@ -1,12 +1,12 @@
 {
-    "name": "CIFAR100_VGG",
+    "name": "CIFAR100_VGGABN",
     "n_gpu": 1,
 
     "arch": {
         "type": "VGG_net",
         "args": {
-            "VGG_type":"D",
-            "batch_norm": false
+            "VGG_type":"A",
+            "batch_norm": true
         }
     },
     "data_loader": {
@@ -40,27 +40,12 @@
         "metric":"val_accuracy"
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": 30,
         "save_dir": "saved/",
-        "save_period": 100,
+        "save_period": 30,
         "verbosity": 1,
         "monitor": "max val_accuracy",
         "early_stop": -1,
         "tensorboard": false
-    },
-    "extract":true,
-    "extractor":{
-        "PE":1,
-        "SIMD":1,
-        "DATAWIDTH":64,
-        "SEQUENCE_LENGTH":120000,
-        "CLASS_LABEL_BITS":1,
-        "MUL_BITS":16,
-        "MUL_INT_BITS":8,
-        "ACC_BITS":16,
-        "ACC_INT_BITS":8,
-        "IA_BITS":8,
-        "IA_INT_BITS":4
-
     }
 }

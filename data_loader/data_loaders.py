@@ -56,7 +56,6 @@ class ImageNet_data_loader(BaseDataLoader):
                 transforms.ToTensor(),
                 normalize,
             ]))
-        # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
         val_dataset = datasets.ImageFolder(valdir, transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),

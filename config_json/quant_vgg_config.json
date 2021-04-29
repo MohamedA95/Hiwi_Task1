@@ -13,18 +13,19 @@
         "type": "CIFAR_data_loader",
         "args":{
             "data_dir": "data/",
-            "batch_size": 1,
+            "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
-            "flavor":10
+            "flavor":100
         }
     },
     "optimizer": {
         "type": "SGD",
         "args":{
             "lr": 0.001,
-            "momentum": 0.9
+            "momentum": 0.9,
+            "weight_decay": 0.0005
         }
     },
     "loss": "CrossEntropy",
@@ -32,11 +33,13 @@
         "accuracy", "top_k_acc"
     ],
     "lr_scheduler": {
-        "type": "StepLR",
+        "type": "ReduceLROnPlateau",
         "args": {
-            "step_size": 50,
-            "gamma": 0.1
-        }
+            "mode": "max",
+            "factor": 0.1,
+            "verbose": true
+        },
+        "metric":"val_accuracy"
     },
     "trainer": {
         "epochs": 200,
@@ -46,5 +49,20 @@
         "monitor": "max val_accuracy",
         "early_stop": -1,
         "tensorboard": false
+    },
+    "extract":true,
+    "extractor":{
+        "PE":1,
+        "SIMD":1,
+        "DATAWIDTH":64,
+        "SEQUENCE_LENGTH":120000,
+        "CLASS_LABEL_BITS":1,
+        "MUL_BITS":16,
+        "MUL_INT_BITS":8,
+        "ACC_BITS":16,
+        "ACC_INT_BITS":8,
+        "IA_BITS":8,
+        "IA_INT_BITS":4
+
     }
 }
