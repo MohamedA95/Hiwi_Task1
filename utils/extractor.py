@@ -98,7 +98,11 @@ def parameters_extractor(model,ext_config):
         global fullyconn_counter
         global pre_layer
         
-        file_object.write("#ifndef CONFIG_H_\n#define CONFIG_H_\n\n")
+        file_object.write("#ifndef CONFIG_H_\n#define CONFIG_H_\n\n\n\n")
+        file_object.write("{:<48}{}\n".format("#define DATAWIDTH",ext_config['DATAWIDTH']))
+        file_object.write("{:<48}{}\n".format("#define CLASS_LABEL_BITS",ext_config['CLASS_LABEL_BITS']))
+        file_object.write("{:<48}{}\n\n\n".format("#define SEQUENCE_LENGTH",ext_config['SEQUENCE_LENGTH']))
+
         # Extract Features layers Data
         for i in model.features:
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):

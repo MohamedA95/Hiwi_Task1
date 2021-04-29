@@ -32,9 +32,9 @@
     "lr_scheduler": {
         "type": "ReduceLROnPlateau",
         "args": {
-            "mode":"max",
             "verbose":true
-        }
+        },
+        "metric":"val_loss"
     },
     "trainer": {
         "epochs": 100,
@@ -44,5 +44,20 @@
         "monitor": "max val_accuracy",
         "early_stop": -1,
         "tensorboard": false
+    },
+    "extract":true,
+    "extractor":{
+        "PE":1,
+        "SIMD":1,
+        "DATAWIDTH":64,
+        "SEQUENCE_LENGTH":120000,
+        "CLASS_LABEL_BITS":1,
+        "MUL_BITS":16,
+        "MUL_INT_BITS":8,
+        "ACC_BITS":16,
+        "ACC_INT_BITS":8,
+        "IA_BITS":8,
+        "IA_INT_BITS":4
+
     }
 }
