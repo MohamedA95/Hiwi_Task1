@@ -37,6 +37,7 @@ import torch
 import torch.nn as nn
 from brevitas.nn import QuantIdentity
 from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
+import torchvision.models as models
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8ActPerTensorFixedPoint, Int8Bias, Int8WeightPerTensorFloat
 from base import BaseModel
 
@@ -50,7 +51,7 @@ cfgs = {
 
 class QuantVGG(BaseModel):
 
-    def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000):
+    def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000, pretrained_model=None):
         super(QuantVGG, self).__init__()
         self.inp_quant = QuantIdentity(act_quant=Int8ActPerTensorFixedPoint, return_quant_tensor=True) #custom
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
@@ -65,7 +66,15 @@ class QuantVGG(BaseModel):
             make_quant_linear(4096, num_classes, bias=False, bit_width=bit_width,enable_bias_quant=False,
                               weight_scaling_per_output_channel=False),
         )
-        self._initialize_weights()
+        if pretrained_model == None:
+            self._initialize_weights()
+        else:
+            # pre_model=VGG_net(VGG_type=self.VGG_type)
+            # pre_model.load_state_dict(torch.load(pretrained_model)['state_dict'])
+            pre_model=models.vgg16(pretrained=True)
+            self._initialize_custom_weights(pre_model)
+
+
 
     def forward(self, x):
         x = self.features(self.inp_quant(x)) #custom
@@ -79,16 +88,30 @@ class QuantVGG(BaseModel):
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(
                     m.weight, mode='fan_out', nonlinearity='relu')
-                if m.bias is not None:
+                if m.bias != None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
-                if(type(m.bias) == torch.nn.parameter.Parameter):
+                if isinstance(m.bias,torch.nn.parameter.Parameter):
                     nn.init.constant_(m.bias, 0)
 
+    def _initialize_custom_weights(self,old_model):
+        for n, o in zip(self.features,old_model.features):
+            if isinstance(n,torch.nn.modules.conv.Conv2d):
+                n.weight=o.weight
+                if n.bias != None:
+                    n.bias=o.bias
+            elif isinstance(n, nn.BatchNorm2d):
+                nn.init.constant_(n.weight, 1)
+                nn.init.constant_(n.bias, 0)
+        for l in self.classifier:
+            if isinstance(l, nn.Linear):
+                nn.init.normal_(l.weight, 0, 0.01)
+                if isinstance(l.bias,torch.nn.parameter.Parameter):
+                    nn.init.constant_(l.bias, 0)
 
 def make_layers(cfg, batch_norm, bit_width):
     layers = []
