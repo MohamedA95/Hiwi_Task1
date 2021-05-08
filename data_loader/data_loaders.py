@@ -56,7 +56,7 @@ class ImageNet_data_loader(BaseDataLoader):
 
     val_loader = None
 
-    def __init__(self, data_dir, batch_size, shuffle=True, num_workers=0, pin_memory=True,validation_split=0.0,training=False):
+    def __init__(self, data_dir, batch_size, shuffle=True, num_workers=0, pin_memory=True,validation_split=0.0,training=True):
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         if training:
             global val_loader
