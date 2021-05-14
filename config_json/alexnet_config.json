@@ -5,16 +5,17 @@
     "arch": {
         "type": "alexnet",
         "args": {
-            "pretrained": false
+            "pretrained": false,
+            "num_classes": 100
         }
     },
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
-            "data_dir": "/scratch/mmoursi/CIFAR_DATA",
+            "data_dir": "/home/habi/TUK/HIWI/Hiwi_Task1/data",
             "download":false,
             "batch_size": 128,
-            "flavor":100
+            "flavor":10
         }
     },
     "optimizer": {
@@ -41,8 +42,8 @@
     "trainer": {
         "epochs": 50,
         "save_dir": "saved/",
-        "save_period": 50,
-        "verbosity": 1,
+        "save_period": 2,
+        "verbosity": 2,
         "monitor": "max val_accuracy",
         "early_stop": -1,
         "tensorboard": false

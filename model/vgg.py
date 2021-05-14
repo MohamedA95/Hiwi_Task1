@@ -13,8 +13,8 @@ class VGG_net(BaseModel):
     def __init__(self, in_channels=3, num_classes=1000, VGG_type='A', batch_norm=False):
         super(VGG_net, self).__init__()
         self.in_channels = in_channels
-        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.features = self.make_layers(cfgs[VGG_type], batch_norm)
+        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Linear(512*7*7, 4096),
             nn.ReLU(),
