@@ -6,7 +6,8 @@
         "type": "QuantVGG",
         "args": {
             "VGG_type":"D",
-            "batch_norm": false
+            "batch_norm": false,
+            "num_classes": 1000
         }
     },
     "data_loader": {

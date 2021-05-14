@@ -1,21 +1,23 @@
 {
-    "name": "CIFAR100_VGGABN",
-    "n_gpu": 1,
+    "name": "Img_VGGD",
+    "n_gpu": 4,
 
     "arch": {
         "type": "VGG_net",
         "args": {
-            "VGG_type":"A",
-            "batch_norm": true
+            "num_classes": 1000,
+            "VGG_type":"D",
+            "batch_norm": false
         }
     },
     "data_loader": {
-        "type": "CIFAR_data_loader",
+        "type": "ImageNet_data_loader",
         "args":{
-            "data_dir": "/scratch/mmoursi/CIFAR_DATA",
-            "download":false,
-            "batch_size": 128,
-            "flavor":100
+            "data_dir": "/scratch/mmoursi",
+            "batch_size": 512,
+            "shuffle":true,
+            "num_workers":0,
+            "pin_memory":true
         }
     },
     "optimizer": {
@@ -40,10 +42,10 @@
         "metric":"val_accuracy"
     },
     "trainer": {
-        "epochs": 30,
+        "epochs": 10,
         "save_dir": "saved/",
-        "save_period": 30,
-        "verbosity": 1,
+        "save_period": 10,
+        "verbosity": 2,
         "monitor": "max val_accuracy",
         "early_stop": -1,
         "tensorboard": false

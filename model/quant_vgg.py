@@ -84,6 +84,7 @@ class QuantVGG(BaseModel):
         return x
 
     def _initialize_weights(self):
+        print("Initializing model")
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(
@@ -99,11 +100,12 @@ class QuantVGG(BaseModel):
                     nn.init.constant_(m.bias, 0)
 
     def _initialize_custom_weights(self,old_model):
+        print("Initializing model with custom weights & bias")
         for n, o in zip(self.features,old_model.features):
-            if isinstance(n,torch.nn.modules.conv.Conv2d):
-                n.weight=o.weight
-                if n.bias != None:
-                    n.bias=o.bias
+            if isinstance(n,nn.Conv2d):
+                n.weight.data=o.weight.data
+                if n.bias != None and o.bias != None:
+                    n.bias.data=o.bias.data
             elif isinstance(n, nn.BatchNorm2d):
                 nn.init.constant_(n.weight, 1)
                 nn.init.constant_(n.bias, 0)

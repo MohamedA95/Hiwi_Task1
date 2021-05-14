@@ -1,19 +1,21 @@
 {
-    "name": "CIFAR_Quant_VGG",
+    "name": "C100_Tran_Quant_VGG",
     "n_gpu": 1,
 
     "arch": {
         "type": "QuantVGG",
         "args": {
             "VGG_type":"D",
-            "batch_norm": false
+            "batch_norm": false,
+            "num_classes": 100,
+            "pretrained_model":"using pyroch pretrained model for now"
         }
     },
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
             "data_dir": "data/",
-            "batch_size": 128,
+            "batch_size": 64,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 0,
@@ -42,9 +44,9 @@
         "metric":"val_accuracy"
     },
     "trainer": {
-        "epochs": 200,
+        "epochs": 30,
         "save_dir": "saved/",
-        "save_period": 50,
+        "save_period": 30,
         "verbosity": 1,
         "monitor": "max val_accuracy",
         "early_stop": -1,
