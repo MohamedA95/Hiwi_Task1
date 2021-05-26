@@ -40,8 +40,8 @@ class Trainer(BaseTrainer):
         self.model.train()
         self.train_metrics.reset()
         for batch_idx, (data, target) in enumerate(self.data_loader):
-            data, target = data.to(self.device), target.to(self.device)
-
+            data = data.to(self.device, non_blocking=True)
+            target = target.to(self.device, non_blocking=True)
             self.optimizer.zero_grad()
             output = self.model(data)
             loss = self.criterion(output, target)
