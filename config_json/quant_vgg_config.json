@@ -1,31 +1,32 @@
 {
-    "name": "C100_Tran_Quant_VGG",
+    "name": "C100QVGG",
     "n_gpu": 1,
 
     "arch": {
         "type": "QuantVGG",
         "args": {
-            "VGG_type":"D",
-            "batch_norm": false,
             "num_classes": 100,
-            "pretrained_model":"using pyroch pretrained model for now"
+            "VGG_type":"D",
+            "batch_norm": false
         }
     },
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
-            "data_dir": "data/",
-            "batch_size": 64,
+            "data_dir": "/scratch/mmoursi/CIFAR_DATA/cifar-100",
+            "batch_size": 512,
+            "download": true,
             "shuffle": true,
-            "validation_split": 0.1,
-            "num_workers": 0,
-            "flavor":100
+            "validation_split": 0.0,
+            "num_workers": 4,
+            "flavor":100,
+            "training":true
         }
     },
     "optimizer": {
         "type": "SGD",
         "args":{
-            "lr": 0.001,
+            "lr": 0.01,
             "momentum": 0.9,
             "weight_decay": 0.0005
         }
@@ -35,24 +36,22 @@
         "accuracy", "top_k_acc"
     ],
     "lr_scheduler": {
-        "type": "ReduceLROnPlateau",
+        "type": "MultiStepLR",
         "args": {
-            "mode": "max",
-            "factor": 0.1,
-            "verbose": true
-        },
-        "metric":"val_accuracy"
+            "milestones": [60, 120, 160],
+            "gamma": 0.2
+        }
     },
     "trainer": {
-        "epochs": 30,
-        "save_dir": "saved/",
-        "save_period": 30,
-        "verbosity": 1,
-        "monitor": "max val_accuracy",
+        "epochs": 200,
+        "save_dir": "/home/mmoursi/Hiwi_Task1/saved/",
+        "save_period": 200,
+        "verbosity": 2,
+        "monitor": "max accuracy",
         "early_stop": -1,
         "tensorboard": false
     },
-    "extract":true,
+    "extract": false,
     "extractor":{
         "PE":1,
         "SIMD":1,
@@ -65,6 +64,5 @@
         "ACC_INT_BITS":8,
         "IA_BITS":8,
         "IA_INT_BITS":4
-
     }
 }
