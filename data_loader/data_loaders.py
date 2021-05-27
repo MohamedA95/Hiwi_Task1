@@ -47,7 +47,7 @@ class CIFAR_data_loader(BaseDataLoader):
                 data_dir, train=training, download=download, transform=preprocess)
         else:
             self.dataset = datasets.CIFAR100(
-                data_dir, train=training, download=download, transform=preprocess)
+                root=data_dir, train=training, download=download, transform=preprocess)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
 # Based on https://github.com/pytorch/examples/blob/master/imagenet/main.py
 
