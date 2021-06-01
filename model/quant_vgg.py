@@ -40,6 +40,7 @@ from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
 import torchvision.models as models
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8ActPerTensorFixedPoint, Int8Bias, Int8WeightPerTensorFloat
 from base import BaseModel
+from .vgg import *
 
 cfgs = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -69,12 +70,17 @@ class QuantVGG(BaseModel):
         if pretrained_model == None:
             self._initialize_weights()
         else:
-            # pre_model=VGG_net(VGG_type=self.VGG_type)
-            # pre_model.load_state_dict(torch.load(pretrained_model)['state_dict'])
-            pre_model=models.vgg16(pretrained=True)
+            pre_model=VGG_net(VGG_type=VGG_type,batch_norm=batch_norm,num_classes=num_classes)
+            loaded_model=torch.load(pretrained_model)['state_dict']
+            if next(iter(loaded_model.keys())).startswith('module'): # check if model was trained using DataParallel, keys() return 'odict_keys' which does not support indexing
+                pre_model=torch.nn.DataParallel(pre_model)           # if model is trained w/ DataParallel it's warraped under module
+                pre_model.load_state_dict(loaded_model)
+                unwrapped_sd=pre_model.module.state_dict()
+                pre_model=VGG_net(VGG_type=VGG_type,batch_norm=batch_norm,num_classes=num_classes)
+                pre_model.load_state_dict(unwrapped_sd)
+            else:
+                pre_model.load_state_dict(loaded_model)
             self._initialize_custom_weights(pre_model)
-
-
 
     def forward(self, x):
         x = self.features(self.inp_quant(x)) #custom
@@ -114,6 +120,7 @@ class QuantVGG(BaseModel):
                 nn.init.normal_(l.weight, 0, 0.01)
                 if isinstance(l.bias,torch.nn.parameter.Parameter):
                     nn.init.constant_(l.bias, 0)
+        print("Initialization Done")
 
 def make_layers(cfg, batch_norm, bit_width):
     layers = []
