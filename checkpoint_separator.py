@@ -1,7 +1,7 @@
 import argparse
 import torch
 import model as module_arch
-from parse_config import ConfigParser
+from pathlib import Path
 
 """
  Takes a check point file created by the project & separats the weights "state dict" 
@@ -9,19 +9,17 @@ from parse_config import ConfigParser
 """
 
 
-def main(config):
-    logger = config.get_logger('Checkpint Separator')
-    logger.info('Loading checkpoint: {} ...'.format(config.resume))
-    checkpoint = torch.load(config.resume)
+def main(model_path):
+    print('Loading checkpoint: {} ...'.format(model_path))
+    checkpoint = torch.load(model_path)
     state_dict = checkpoint['state_dict']
-    res_path = config.resume.parent.joinpath("state_dict")
+    res_path = Path(model_path).parent.joinpath("state_dict")
     torch.save(state_dict, res_path)
     print("Result:\n", res_path)
 
 
 if __name__ == '__main__':
-    args = argparse.ArgumentParser(description='PyTorch Template')
-    args.add_argument('-m', '--model', default=None,
-                      type=str, help='path to model')
-    config = ConfigParser.from_args(args)
-    main(config)
+    args = argparse.ArgumentParser(description='Checkpint Separator')
+    args.add_argument('-m', '--model', default=None, type=str, help='path to model')
+    args = args.parse_args()
+    main(args.model)
