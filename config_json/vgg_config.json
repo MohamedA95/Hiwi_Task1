@@ -1,6 +1,6 @@
 {
     "name": "Img_VGGD",
-    "n_gpu": 4,
+    "n_gpu": 1,
 
     "arch": {
         "type": "VGG_net",
@@ -11,13 +11,12 @@
         }
     },
     "data_loader": {
-        "type": "ImageNet_data_loader",
+        "type": "CIFAR_data_loader",
         "args":{
-            "data_dir": "/scratch/mmoursi",
-            "batch_size": 512,
+            "data_dir": "data/",
+            "batch_size": 256,
             "shuffle":true,
-            "num_workers":0,
-            "pin_memory":true
+            "num_workers":8
         }
     },
     "optimizer": {
@@ -33,13 +32,11 @@
         "accuracy", "top_k_acc"
     ],
     "lr_scheduler": {
-        "type": "ReduceLROnPlateau",
+        "type": "StepLR",
         "args": {
-            "mode": "max",
-            "factor": 0.1,
-            "verbose": true
-        },
-        "metric":"val_accuracy"
+            "step_size": 50,
+            "gamma": 0.1
+        }
     },
     "trainer": {
         "epochs": 10,

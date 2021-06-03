@@ -9,7 +9,7 @@ from utils import read_json, write_json
 
 
 class ConfigParser:
-    def __init__(self, config, resume=None, modification=None, run_id=None):
+    def __init__(self, config, resume=None, modification=None, run_id=None, test=False):
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
         and logging module.
@@ -26,21 +26,30 @@ class ConfigParser:
         save_dir = Path(self.config['trainer']['save_dir'])
 
         exper_name = self.config['name']
-        if run_id is None: # use timestamp as default run-id
+        if test:
+            run_id=resume.parent.name
+        elif run_id is None: # use timestamp as default run-id
             run_id = datetime.now().strftime(r'%d%m_%H%M%S')
         self._save_dir = save_dir / 'models' / exper_name / run_id
-        self._log_dir = self._save_dir # change to save_dir / 'log' / exper_name / run_id, tosave log in separate folder
+        self._log_dir = self._save_dir # change to save_dir / 'log' / exper_name / run_id, to save log in separate folder
 
         # make directory for saving checkpoints and log.
-        exist_ok = run_id == ''
+        if test:
+            exist_ok=True
+        else:
+            exist_ok = run_id == ''
         self.save_dir.mkdir(parents=True, exist_ok=exist_ok)
         # self.log_dir.mkdir(parents=True, exist_ok=exist_ok) # uncomment to save log in separate folder
 
         # save updated config file to the checkpoint dir
-        write_json(self.config, self.save_dir / 'config.json')
+        if not test:
+            write_json(self.config, self.save_dir / 'config.json')
 
         # configure logging module
-        setup_logging(save_dir=self.log_dir,log_config=str(Path(__file__).parent.absolute())+'/logger/logger_config.json')
+        if test:
+            setup_logging(save_dir=self.log_dir,log_config='logger/test_logger_config.json')
+        else:
+            setup_logging(save_dir=self.log_dir,log_config='logger/train_logger_config.json')
         self.log_levels = {
             0: logging.WARNING,
             1: logging.INFO,
@@ -48,7 +57,7 @@ class ConfigParser:
         }
 
     @classmethod
-    def from_args(cls, args, options=''):
+    def from_args(cls, args, options='',test=False):
         """
         Initialize this class from some cli arguments. Used in train, test.
         """
@@ -75,7 +84,7 @@ class ConfigParser:
 
         # parse custom cli options into dictionary
         modification = {opt.target : getattr(args, _get_opt_name(opt.flags)) for opt in options}
-        return cls(config, resume, modification)
+        return cls(config, resume, modification,test=test)
 
     def init_obj(self, name, module, *args, **kwargs):
         """

@@ -10,14 +10,14 @@
         "console": {
             "class": "logging.StreamHandler", 
             "level": "DEBUG", 
-            "formatter": "simple", 
+            "formatter": "datetime", 
             "stream": "ext://sys.stdout"
             }, 
         "info_file_handler": {
             "class": "logging.handlers.RotatingFileHandler", 
             "level": "INFO", 
             "formatter": "datetime", 
-            "filename": "info.log", 
+            "filename": "train.log", 
             "maxBytes": 10485760, 
             "backupCount": 20, "encoding": "utf8"
         }

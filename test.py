@@ -77,5 +77,5 @@ if __name__ == '__main__':
                       help='indices of GPUs to enable (default: all)')
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target help')
     options = [CustomArgs(['-x', '--extract'], type=str, target=('extract'), help='extract parameters of the model (default: False)')]
-    config = ConfigParser.from_args(args,options=options)
+    config = ConfigParser.from_args(args,options=options,test=True)
     main(config)
