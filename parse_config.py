@@ -26,7 +26,7 @@ class ConfigParser:
         save_dir = Path(self.config['trainer']['save_dir'])
 
         exper_name = self.config['name']
-        if test:
+        if test and run_id is None:
             run_id=resume.parent.name
         elif run_id is None: # use timestamp as default run-id
             run_id = datetime.now().strftime(r'%d%m_%H%M%S')
