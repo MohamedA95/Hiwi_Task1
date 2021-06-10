@@ -38,7 +38,7 @@ import torch.nn as nn
 from brevitas.nn import QuantIdentity
 from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
 import torchvision.models as models
-from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8ActPerTensorFixedPoint, Int8Bias, Int8WeightPerTensorFloat
+from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8ActPerTensorFixedPoint, Int8Bias, Int8WeightPerTensorFloat, Int8BiasPerTensorFloatInternalScaling
 from base import BaseModel
 from .vgg import *
 
@@ -134,10 +134,10 @@ def make_layers(cfg, batch_norm, bit_width):
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
             conv2d = make_quant_conv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1, bias=True, 
-            bit_width=bit_width, weight_quant=Int8WeightPerTensorFloat,bias_quant=Int8Bias,output_quant=Int8ActPerTensorFixedPoint,return_quant_tensor=True)
+            bit_width=bit_width, weight_quant=Int8WeightPerTensorFloat,bias_quant=Int8BiasPerTensorFloatInternalScaling,return_quant_tensor=True) #,output_quant=Int8ActPerTensorFixedPoint
             conv2d.cache_inference_quant_out = True
             conv2d.cache_inference_quant_bias = True
-            act = make_quant_relu(bit_width,return_quant_tensor=True,output_quant=Int8ActPerTensorFixedPoint)
+            act = make_quant_relu(bit_width,return_quant_tensor=True) #,output_quant=Int8ActPerTensorFixedPoint
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), act]
             else:
