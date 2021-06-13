@@ -38,7 +38,9 @@ import torch.nn as nn
 from brevitas.nn import QuantIdentity
 from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
 import torchvision.models as models
-from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8ActPerTensorFixedPoint, Int8Bias, Int8WeightPerTensorFloat, Int8BiasPerTensorFloatInternalScaling
+from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
+from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8WeightPerTensorFloat
+from brevitas.quant import Int8Bias, Int8BiasPerTensorFloatInternalScaling
 from base import BaseModel
 from .vgg import *
 
@@ -54,7 +56,7 @@ class QuantVGG(BaseModel):
 
     def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000, pretrained_model=None):
         super(QuantVGG, self).__init__()
-        self.inp_quant = QuantIdentity(act_quant=Int8ActPerTensorFixedPoint, return_quant_tensor=True) #custom
+        self.inp_quant = QuantIdentity(act_quant=Int8ActPerTensorFloat, return_quant_tensor=True) #custom
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(

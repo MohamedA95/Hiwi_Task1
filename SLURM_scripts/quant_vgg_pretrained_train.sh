@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH -J QVGGC100Pre
+#SBATCH -J QVGGImgPre8bit
 #SBATCH -N 1
-#SBATCH -o /home/mmoursi/Hiwi_Task1/res/QVGGC100Pre.out
-#SBATCH -e /home/mmoursi/Hiwi_Task1/res/QVGGC100Pre.err
+#SBATCH -o /home/mmoursi/Hiwi_Task1/res/QVGGImgPre8bit.out
+#SBATCH -e /home/mmoursi/Hiwi_Task1/res/QVGGImgPre8bit.err
 #SBATCH --gres=gpu:V100:1
+#SBATCH --exclude=gpu[013,014,015]
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8192
-#SBATCH --mail-type=END
-#SBATCH --time 60:00:00
+#SBATCH --mail-type=START,END
 
 echo "Executing on $HOSTNAME"
 date
 module load nvidia/latest
 module load cudnn/latest 
-python3 /home/mmoursi/Hiwi_Task1/train.py -c /home/mmoursi/Hiwi_Task1/config_json/quant_vgg_pretrained_config.json
+python3 /home/mmoursi/Hiwi_Task1/train.py -c /home/mmoursi/Hiwi_Task1/config_json/quant_vgg_pretrained_config4bit.json

@@ -7,7 +7,8 @@
         "args": {
             "num_classes": 100,
             "VGG_type":"D",
-            "batch_norm": false
+            "batch_norm": false,
+            "bit_width": 8
         }
     },
     "data_loader": {
