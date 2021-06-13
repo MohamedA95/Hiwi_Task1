@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 def main(model_path):
-    print('Loading checkpoint: {} ...'.format(model_path))
+    print('Loading checkpoint: {}'.format(model_path))
     checkpoint = torch.load(model_path)
     state_dict = checkpoint['state_dict']
     res_path = Path(model_path).parent.joinpath("state_dict")
