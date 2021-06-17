@@ -29,9 +29,10 @@ class ConfigParser:
         if test and run_id is None:
             run_id=resume.parent.name
         elif run_id is None: # use timestamp as default run-id
-            run_id = datetime.now().strftime(r'%d%m_%H%M%S')
-        self._save_dir = save_dir / 'models' / exper_name / run_id
-        self._log_dir = self._save_dir # change to save_dir / 'log' / exper_name / run_id, to save log in separate folder
+            run_id = datetime.now().strftime(r'_%d_%m_%H%M%S')
+            run_id = exper_name + run_id
+        self._save_dir = save_dir / run_id / 'models' 
+        self._log_dir = save_dir / run_id / 'log' 
 
         # make directory for saving checkpoints and log.
         if test:
@@ -39,7 +40,7 @@ class ConfigParser:
         else:
             exist_ok = run_id == ''
         self.save_dir.mkdir(parents=True, exist_ok=exist_ok)
-        # self.log_dir.mkdir(parents=True, exist_ok=exist_ok) # uncomment to save log in separate folder
+        self.log_dir.mkdir(parents=True, exist_ok=exist_ok)
 
         # save updated config file to the checkpoint dir
         if not test:
