@@ -56,7 +56,7 @@ class QuantVGG(BaseModel):
 
     def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000, pretrained_model=None):
         super(QuantVGG, self).__init__()
-        self.inp_quant = QuantIdentity(act_quant=Int8ActPerTensorFloat, return_quant_tensor=True) #custom
+        self.inp_quant = QuantIdentity(bit_width=bit_width,act_quant=Int8ActPerTensorFloat, return_quant_tensor=True) #custom
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
