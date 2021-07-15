@@ -64,3 +64,7 @@ to do
 
 #### **extractor**
 to do
+
+## To Do
+-No need to create a new folder when resuming traning
+-Generic model initialization from PyTorch
