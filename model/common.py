@@ -3,7 +3,7 @@ from brevitas.core.quant import QuantType
 from brevitas.core.restrict_val import RestrictValueType
 from brevitas.core.scaling import ScalingImplType
 from brevitas.core.stats import StatsOp
-from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8Bias,Int8ActPerTensorFixedPoint
+from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8Bias,Int8ActPerTensorFixedPoint,Int8WeightPerTensorFloat,Int8BiasPerTensorFloatInternalScaling,Int8ActPerTensorFloat
 
 QUANT_TYPE = QuantType.INT
 SCALING_MIN_VAL = 2e-16
@@ -19,11 +19,11 @@ HARD_TANH_THRESHOLD = 10.0
 WEIGHT_SCALING_IMPL_TYPE = ScalingImplType.STATS
 WEIGHT_SCALING_PER_OUTPUT_CHANNEL = False # Each channel in each layer would have it's own scale, default: False
 WEIGHT_SCALING_STATS_OP = StatsOp.MAX
-WEIGHT_RESTRICT_SCALING_TYPE = RestrictValueType.POWER_OF_TWO # Allows the scale to be non integer, default: LOG_FP
+WEIGHT_RESTRICT_SCALING_TYPE = RestrictValueType.LOG_FP # Allows the scale to be non integer, default: LOG_FP
 WEIGHT_NARROW_RANGE = True
-OUTPUT_QUANTIZER=Int8ActPerTensorFixedPoint
 ENABLE_BIAS_QUANT = True # enable bias quantization, default: False
-
+WEIGHT_QUANTIZER = Int8WeightPerTensorFixedPoint
+BIAS_QUANTIZER = Int8Bias
 HADAMARD_FIXED_SCALE = False
 
 
@@ -35,9 +35,8 @@ def make_quant_conv2d(in_channels,
                       groups,
                       bias,
                       bit_width,
-                      weight_quant=Int8WeightPerTensorFixedPoint,
-                      bias_quant=None,
-                      output_quant=OUTPUT_QUANTIZER, #Custom
+                      weight_quant=WEIGHT_QUANTIZER,
+                      bias_quant=BIAS_QUANTIZER,
                       return_quant_tensor=True, #Custom
                       enable_bias_quant=ENABLE_BIAS_QUANT,
                       weight_quant_type=QUANT_TYPE,
@@ -57,6 +56,7 @@ def make_quant_conv2d(in_channels,
                            bias=bias,
                            weight_quant=weight_quant,
                            bias_quant=bias_quant,
+                           return_quant_tensor=return_quant_tensor,
                            bias_quant_type=bias_quant_type,
                            compute_output_bit_width=bias and enable_bias_quant,
                            compute_output_scale=bias and enable_bias_quant,
@@ -67,15 +67,16 @@ def make_quant_conv2d(in_channels,
                            weight_scaling_per_output_channel=weight_scaling_per_output_channel,
                            weight_restrict_scaling_type=weight_restrict_scaling_type,
                            weight_narrow_range=weight_narrow_range,
-                           weight_scaling_min_val=weight_scaling_min_val,
-                           output_quant=output_quant, #Custom
-                           return_quant_tensor=return_quant_tensor) #Custom
+                           weight_scaling_min_val=weight_scaling_min_val)
 
 
 def make_quant_linear(in_channels,
                       out_channels,
                       bias,
                       bit_width,
+                      weight_quant=WEIGHT_QUANTIZER,
+                      bias_quant=BIAS_QUANTIZER,
+                      return_quant_tensor=True, #custom
                       enable_bias_quant=ENABLE_BIAS_QUANT,
                       weight_quant_type=QUANT_TYPE,
                       weight_scaling_impl_type=WEIGHT_SCALING_IMPL_TYPE,
@@ -86,8 +87,10 @@ def make_quant_linear(in_channels,
                       weight_scaling_min_val=SCALING_MIN_VAL):
     bias_quant_type = QUANT_TYPE if enable_bias_quant else QuantType.FP
     return qnn.QuantLinear(in_channels, out_channels,
+                           weight_quant=weight_quant,
+                           bias_quant=bias_quant,
+                           return_quant_tensor=return_quant_tensor, #custom
                            bias=bias,
-                           enable_bias_quant=enable_bias_quant,
                            bias_quant_type=bias_quant_type,
                            compute_output_bit_width=bias and enable_bias_quant,
                            compute_output_scale=bias and enable_bias_quant,
@@ -109,7 +112,6 @@ def make_quant_relu(bit_width,
                     scaling_min_val=SCALING_MIN_VAL,
                     max_val=ACT_MAX_VAL,
                     return_quant_tensor=ACT_RETURN_QUANT_TENSOR,
-                    output_quant=OUTPUT_QUANTIZER,
                     per_channel_broadcastable_shape=ACT_PER_CHANNEL_BROADCASTABLE_SHAPE):
     return qnn.QuantReLU(bit_width=bit_width,
                          quant_type=quant_type,
@@ -119,8 +121,7 @@ def make_quant_relu(bit_width,
                          scaling_min_val=scaling_min_val,
                          max_val=max_val,
                          return_quant_tensor=return_quant_tensor,
-                         per_channel_broadcastable_shape=per_channel_broadcastable_shape,
-                         output_quant=output_quant) #Custom
+                         per_channel_broadcastable_shape=per_channel_broadcastable_shape)
 
 
 def make_quant_hard_tanh(bit_width,

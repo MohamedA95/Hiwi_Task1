@@ -36,6 +36,7 @@
 import torch
 import torch.nn as nn
 from brevitas.nn import QuantIdentity
+import brevitas.nn as qnn
 from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
 import torchvision.models as models
 from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
@@ -58,16 +59,15 @@ class QuantVGG(BaseModel):
         super(QuantVGG, self).__init__()
         self.inp_quant = QuantIdentity(bit_width=bit_width,act_quant=Int8ActPerTensorFloat, return_quant_tensor=True) #custom
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
-        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
+        self.avgpool = qnn.QuantAdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
-            make_quant_linear(512 * 7 * 7, 4096, bias=True, bit_width=bit_width,enable_bias_quant=True),
-            make_quant_relu(bit_width),
+            make_quant_linear(512 * 7 * 7, 4096, bias=True, enable_bias_quant=True, bit_width=bit_width,return_quant_tensor=True),
+            make_quant_relu(bit_width,return_quant_tensor=True),
             nn.Dropout(),
-            make_quant_linear(4096, 4096, bias=True, bit_width=bit_width,enable_bias_quant=True),
-            make_quant_relu(bit_width),
+            make_quant_linear(4096, 4096, bias=True, enable_bias_quant=True, bit_width=bit_width,return_quant_tensor=True),
+            make_quant_relu(bit_width,return_quant_tensor=True),
             nn.Dropout(),
-            make_quant_linear(4096, num_classes, bias=False, bit_width=bit_width,enable_bias_quant=False,
-                              weight_scaling_per_output_channel=False),
+            make_quant_linear(4096, num_classes, bias=False, bit_width=bit_width,weight_scaling_per_output_channel=False,return_quant_tensor=False)
         )
         if pretrained_model == None:
             self._initialize_weights()
@@ -89,9 +89,10 @@ class QuantVGG(BaseModel):
             self._initialize_custom_weights(pre_model)
 
     def forward(self, x):
-        x = self.features(self.inp_quant(x)) #custom
+        x = self.inp_quant(x)
+        x = self.features(x)
         x = self.avgpool(x)
-        x = torch.flatten(x, 1)
+        x = x.flatten(1)
         x = self.classifier(x)
         return x
 
@@ -99,8 +100,7 @@ class QuantVGG(BaseModel):
         print("Initializing model")
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(
-                    m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias != None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
@@ -135,11 +135,11 @@ def make_layers(cfg, batch_norm, bit_width):
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
-            conv2d = make_quant_conv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1, bias=True, 
-            bit_width=bit_width, weight_quant=Int8WeightPerTensorFloat,bias_quant=Int8BiasPerTensorFloatInternalScaling,return_quant_tensor=True) #,output_quant=Int8ActPerTensorFixedPoint
+            conv2d = make_quant_conv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1, bias=True,
+            bit_width=bit_width,return_quant_tensor=True)
             conv2d.cache_inference_quant_out = True
             conv2d.cache_inference_quant_bias = True
-            act = make_quant_relu(bit_width,return_quant_tensor=True) #,output_quant=Int8ActPerTensorFixedPoint
+            act = make_quant_relu(bit_width,return_quant_tensor=True)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), act]
             else:
