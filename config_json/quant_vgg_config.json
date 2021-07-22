@@ -1,12 +1,12 @@
 {
     "name": "C100QVGG",
-    "n_gpu": 1,
+    "n_gpu": 0,
 
     "arch": {
         "type": "QuantVGG",
         "args": {
-            "num_classes": 100,
-            "VGG_type":"D",
+            "num_classes": 10,
+            "VGG_type":"A",
             "batch_norm": false,
             "bit_width": 8
         }
@@ -14,20 +14,20 @@
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
-            "data_dir": "/scratch/mmoursi/CIFAR_DATA/cifar-100",
-            "batch_size": 32,
+            "data_dir": "data/",
+            "batch_size": 1,
             "download": true,
             "shuffle": true,
             "validation_split": 0.0,
-            "num_workers": 4,
-            "flavor":100,
+            "num_workers": 1,
+            "flavor":10,
             "training":true
         }
     },
     "test_data_loader": {
         "type": "CIFAR_data_loader",
         "args": {
-            "data_dir": "/scratch/mmoursi/CIFAR_DATA/cifar-100",
+            "data_dir": "data/",
             "batch_size": 32,
             "download": false,
             "shuffle": true,
@@ -58,9 +58,9 @@
     },
     "trainer": {
         "epochs": 200,
-        "save_dir": "/home/mmoursi/Hiwi_Task1/saved/",
+        "save_dir": "saved/",
         "save_period": 200,
-        "verbosity": 1,
+        "verbosity": 2,
         "monitor": "max accuracy",
         "early_stop": -1,
         "tensorboard": false
