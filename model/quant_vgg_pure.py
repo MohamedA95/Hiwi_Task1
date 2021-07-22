@@ -11,7 +11,7 @@ cfgs = {
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
-BIAS_QUANTIZER = Int8Bias
+BIAS_QUANTIZER = Int16Bias
 
 class QuantVGG_pure(nn.Module):
 

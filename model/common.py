@@ -3,7 +3,7 @@ from brevitas.core.quant import QuantType
 from brevitas.core.restrict_val import RestrictValueType
 from brevitas.core.scaling import ScalingImplType
 from brevitas.core.stats import StatsOp
-from brevitas.quant import Int8WeightPerTensorFixedPoint,Int16Bias, Int8Bias,Int8ActPerTensorFixedPoint,Int8WeightPerTensorFloat,Int8BiasPerTensorFloatInternalScaling,Int8ActPerTensorFloat
+from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8Bias,Int8ActPerTensorFixedPoint,Int8WeightPerTensorFloat,Int8BiasPerTensorFloatInternalScaling,Int8ActPerTensorFloat
 
 QUANT_TYPE = QuantType.INT
 SCALING_MIN_VAL = 2e-16
@@ -164,8 +164,3 @@ def make_hadamard_classifier(in_channels,
     return qnn.HadamardClassifier(in_channels=in_channels,
                                   out_channels=out_channels,
                                   fixed_scale=fixed_scale)
-
-def print_config():
-    print("BIAS_QUANTIZER: ",BIAS_QUANTIZER)
-    print("ENABLE_BIAS_QUANT: ",ENABLE_BIAS_QUANT)
-    print("WEIGHT_QUANTIZER: ",WEIGHT_QUANTIZER)

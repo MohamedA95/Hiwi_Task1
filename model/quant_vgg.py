@@ -37,7 +37,7 @@ import torch
 import torch.nn as nn
 from brevitas.nn import QuantIdentity
 import brevitas.nn as qnn
-from .common import make_quant_conv2d, make_quant_linear, make_quant_relu,print_config
+from .common import make_quant_conv2d, make_quant_linear, make_quant_relu
 import torchvision.models as models
 from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8WeightPerTensorFloat
@@ -69,9 +69,6 @@ class QuantVGG(BaseModel):
             nn.Dropout(),
             make_quant_linear(4096, num_classes, bias=False, bit_width=bit_width,weight_scaling_per_output_channel=False,return_quant_tensor=False)
         )
-
-        print_config()
-        
         if pretrained_model == None:
             self._initialize_weights()
         else:
