@@ -59,6 +59,6 @@ class VGG_net(BaseModel):
                 if batch_norm:
                     layers += [conv2d, nn.BatchNorm2d(layer), nn.ReLU()]
                 else:
-                    layers += [conv2d, nn.ReLU()]
+                    layers += [conv2d, nn.ReLU(inplace=True)]
                 in_channels = layer
         return nn.Sequential(*layers)
