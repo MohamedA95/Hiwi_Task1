@@ -64,6 +64,8 @@ def make_layers(cfg, batch_norm, bit_width):
             layers += [qnn.QuantMaxPool2d(kernel_size=2, stride=2)]
         else:
             conv2d = qnn.QuantConv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1, weight_bit_width=bit_width, bias_quant=BIAS_QUANTIZER,weight_quant=WEIGHT_QUANTIZER, return_quant_tensor=True)
+            conv2d.cache_inference_quant_out = True
+            conv2d.cache_inference_quant_bias = True
             act = qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=True)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), act]
