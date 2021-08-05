@@ -16,7 +16,7 @@ BIAS_QUANTIZER = Int8Bias
 WEIGHT_QUANTIZER = Int8WeightPerTensorFixedPoint
 class QuantVGG_pure(nn.Module):
 
-    def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000):
+    def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000, pretrained_model=None):
         super(QuantVGG_pure, self).__init__()
         self.inp_quant = qnn.QuantIdentity(bit_width=bit_width, return_quant_tensor=True)
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
@@ -30,7 +30,27 @@ class QuantVGG_pure(nn.Module):
             qnn.QuantDropout(),
             qnn.QuantLinear(4096, num_classes, bias=False, weight_bit_width=bit_width),
         )
-        self._initialize_weights()
+
+        print_config()
+
+        if pretrained_model == None:
+            self._initialize_weights()
+        else:
+            if pretrained_model == 'pytorch':
+                print("Initializing with pretrained model from PyTorch")
+                pre_model=models.vgg16(pretrained=True) # use pytorch's pretrained model
+            else:
+                pre_model=VGG_net(VGG_type=VGG_type,batch_norm=batch_norm,num_classes=num_classes)
+                loaded_model=torch.load(pretrained_model)['state_dict']
+                if next(iter(loaded_model.keys())).startswith('module'): # check if model was trained using DataParallel, keys() return 'odict_keys' which does not support indexing
+                    pre_model=torch.nn.DataParallel(pre_model)           # if model is trained w/ DataParallel it's warraped under module
+                    pre_model.load_state_dict(loaded_model)
+                    unwrapped_sd=pre_model.module.state_dict()
+                    pre_model=VGG_net(VGG_type=VGG_type,batch_norm=batch_norm,num_classes=num_classes)
+                    pre_model.load_state_dict(unwrapped_sd)
+                else:
+                    pre_model.load_state_dict(loaded_model)
+            self._initialize_custom_weights(pre_model)
 
     def forward(self, x):
         x = self.inp_quant(x)
@@ -55,6 +75,22 @@ class QuantVGG_pure(nn.Module):
                 if isinstance(m.bias,torch.nn.parameter.Parameter):
                     nn.init.constant_(m.bias, 0)
 
+    def _initialize_custom_weights(self,old_model):
+        print("Initializing model with custom weights & bias")
+        for n, o in zip(self.features,old_model.features):
+            if isinstance(n,nn.Conv2d):
+                n.weight.data=o.weight.data
+                if n.bias != None and o.bias != None:
+                    n.bias.data=o.bias.data
+            elif isinstance(n, nn.BatchNorm2d):
+                nn.init.constant_(n.weight, 1)
+                nn.init.constant_(n.bias, 0)
+        for l in self.classifier:
+            if isinstance(l, nn.Linear):
+                nn.init.normal_(l.weight, 0, 0.01)
+                if isinstance(l.bias,torch.nn.parameter.Parameter):
+                    nn.init.constant_(l.bias, 0)
+        print("Initialization Done")
 
 def make_layers(cfg, batch_norm, bit_width):
     layers = []
