@@ -81,7 +81,7 @@ def fullyconn_parser(layer,file):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_WMEM"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
 
 
-def parameters_extractor(model,ext_config):
+def parameters_extractor(model,ext_config,result_path=""):
     """
     Extracts layers properites, weight & bias and writes the result to .h file  with the model name
     under the same path, 
@@ -91,7 +91,7 @@ def parameters_extractor(model,ext_config):
     config -- config dictionary, contaning special parameters 
 
     """
-    with open( "{}_config.h".format(type(model).__name__), 'w') as file_object:
+    with open( result_path+"/{}_config.h".format(type(model).__name__), 'w') as file_object:
         global conv2d_counter
         global maxpool2d_counter
         global quantrelue_counter

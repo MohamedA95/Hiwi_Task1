@@ -19,7 +19,9 @@ def main(model_path,config):
     checkpoint = torch.load(model_path)
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
-    res_path = parameters_extractor(model,config['extractor'])
+    model.eval()
+    model(torch.randn(128,3, 224, 224))
+    res_path = parameters_extractor(model,config['extractor'],result_path=model_path.parent)
     print("Result:\n", res_path)
 
 
@@ -27,6 +29,7 @@ if __name__ == '__main__':
     args = argparse.ArgumentParser(description='Parameters_extractor')
     args.add_argument('-m', '--model', default=None, type=str, help='path to model')
     args = args.parse_args()
-    config_path = Path(args.model).parent.joinpath('config.json')
+    model_path= Path(args.model)
+    config_path = model_path.parent.joinpath('config.json')
     config = read_json(config_path)
-    main(args.model,config)
+    main(model_path,config)
