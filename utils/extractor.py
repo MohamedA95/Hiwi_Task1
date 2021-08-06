@@ -2,6 +2,7 @@ import torch
 import pathlib
 import brevitas
 from model.quant_vgg import QuantVGG
+from tqdm import tqdm
 
 conv2d_counter = 0
 maxpool2d_counter = 0
@@ -91,7 +92,8 @@ def parameters_extractor(model,ext_config,result_path=""):
     config -- config dictionary, contaning special parameters 
 
     """
-    with open( result_path+"/{}_config.h".format(type(model).__name__), 'w') as file_object:
+    res_path=None
+    with open(str(result_path)+"/config.h", 'w') as file_object:
         global conv2d_counter
         global maxpool2d_counter
         global quantrelue_counter
@@ -104,7 +106,7 @@ def parameters_extractor(model,ext_config,result_path=""):
         file_object.write("{:<48}{}\n\n\n".format("#define SEQUENCE_LENGTH",ext_config['SEQUENCE_LENGTH']))
 
         # Extract Features layers Data
-        for i in model.features:
+        for i in tqdm(model.features):
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                 quant_conv2d_parser(i, file_object,ext_config)
                 pre_layer="CONV2D_{}_".format(conv2d_counter)
@@ -171,10 +173,11 @@ def parameters_extractor(model,ext_config,result_path=""):
                     file_object.write(("{:02x}}};\n" if row[-1]>0 else "{:03x}}};\n").format(row[-1]))
                 file_object.write("\n")
                 if i.is_bias_quant_enabled:
-                    file_object.write("FullyConnected_{}_BIAS\n{\n".format(fullyconn_counter))
+                    file_object.write("FullyConnected_{}_BIAS\n{{\n".format(fullyconn_counter))
                     for val in i.int_bias()[0:-1]:
                         file_object.write(("{:02x}, " if val>0 else "{:03x}, ").format(val))
                     file_object.write(("{:02x}}}\n" if i.int_bias()[-1]>0 else "{:03x}}}\n").format(i.int_bias()[-1]))
                     file_object.write(";\n")
                 fullyconn_counter += 1
-    return "{}_config.h".format(type(model).__name__)
+        res_path=file_object.name
+    return res_path

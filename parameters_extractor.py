@@ -19,8 +19,12 @@ def main(model_path,config):
     checkpoint = torch.load(model_path)
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
+    data=torch.randn(1,3, 224, 224)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
     model.eval()
-    model(torch.randn(128,3, 224, 224))
+    data = data.to(device)
+    model(data)
     res_path = parameters_extractor(model,config['extractor'],result_path=model_path.parent)
     print("Result:\n", res_path)
 
