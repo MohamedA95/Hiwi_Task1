@@ -5,6 +5,7 @@ from .common import print_config
 from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8WeightPerTensorFloat
 from brevitas.quant import Int8Bias, Int8BiasPerTensorFloatInternalScaling, Int16Bias, IntBias
+from .vgg import *
 
 cfgs = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
