@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torchvision.models as models
 import brevitas.nn as qnn
 from .common import print_config
 from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
@@ -31,6 +32,9 @@ class QuantVGG_pure(nn.Module):
             qnn.QuantDropout(),
             qnn.QuantLinear(4096, num_classes, bias=False, weight_bit_width=bit_width),
         )
+        self.classifier[0].cache_inference_quant_bias=True
+        self.classifier[3].cache_inference_quant_bias=True
+        self.classifier[6].cache_inference_quant_bias=True
 
         print_config()
 

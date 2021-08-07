@@ -7,6 +7,7 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model as module_arch
 import torch.nn as nn
+from torchinfo import summary
 from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device
@@ -32,7 +33,7 @@ def main(config):
     device, device_ids = prepare_device(config['n_gpu'])
     model = model.to(device)
     logger.info(config['name'])
-    logger.info(model)
+    summary(model,input_size=(config['data_loader']['args']['batch_size'], 3, 224, 224))
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 

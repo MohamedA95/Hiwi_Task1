@@ -1,6 +1,7 @@
 import argparse
 import collections
 import torch
+from torchinfo import summary
 from tqdm import tqdm
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
@@ -32,7 +33,7 @@ def main(config):
     # prepare model for testing
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-    logger.info(model)
+    summary(model,input_size=(config['data_loader']['args']['batch_size'], 3, 224, 224))
     model.eval()
 
     total_loss = 0.0

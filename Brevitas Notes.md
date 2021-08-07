@@ -4,3 +4,6 @@
 4. Any value that is passed as keyword argument overwrites what's in the quantizer
 
 * Alessandro, gitter
+
+5. Dev barnch has some extra features -torch.cat()- to install: 
+    pip3 install -e git://github.com/Xilinx/brevitas.git@dev#egg=brevitas

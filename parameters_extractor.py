@@ -16,11 +16,11 @@ def main(model_path,config):
     # build model architecture
     model = getattr(module_arch,config['arch']['type'])(**dict(config['arch']['args']))
     print('Loading checkpoint: {}'.format(model_path))
-    checkpoint = torch.load(model_path)
+    checkpoint = torch.load(model_path,map_location='cpu')
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
     data=torch.randn(1,3, 224, 224)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu') #'cuda' if torch.cuda.is_available() else 
     model = model.to(device)
     model.eval()
     data = data.to(device)

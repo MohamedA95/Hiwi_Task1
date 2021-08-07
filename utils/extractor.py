@@ -106,7 +106,7 @@ def parameters_extractor(model,ext_config,result_path=""):
         file_object.write("{:<48}{}\n\n\n".format("#define SEQUENCE_LENGTH",ext_config['SEQUENCE_LENGTH']))
 
         # Extract Features layers Data
-        for i in tqdm(model.features):
+        for i in tqdm(model.features,desc='Extracting features parameters'):
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                 quant_conv2d_parser(i, file_object,ext_config)
                 pre_layer="CONV2D_{}_".format(conv2d_counter)
@@ -119,9 +119,8 @@ def parameters_extractor(model,ext_config,result_path=""):
                 quantReLU_parser(i,file_object,ext_config)
                 pre_layer="RELU_{}_".format(quantrelue_counter)
                 quantrelue_counter+=1
-        print("Extracted Features parameters successfully, Working on classifer parameters")
         # Extract classifier layers Data
-        for i in model.classifier:
+        for i in tqdm(model.classifier,desc='Extracting classifer parameters'):
             if isinstance(i,brevitas.nn.QuantLinear):
                 fullyconn_parser(i, file_object)
                 pre_layer="FC_{}_".format(fullyconn_counter)
@@ -130,10 +129,9 @@ def parameters_extractor(model,ext_config,result_path=""):
                 quantReLU_parser(i,file_object,ext_config)
                 pre_layer="RELU_{}_".format(quantrelue_counter)
                 quantrelue_counter+=1
-        print("Extracting features weight & bias")
         # Extract Conv layers Weight & Bias   
         conv2d_counter=0
-        for i in model.features:
+        for i in tqdm(model.features,desc='Extracting features weight & bias'):
             if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                 file_object.write("static ap_uint<CONV2D_{0}_WEIGHT_BITS> conv2d_{0}_weight [CONV2D_{0}_PE] [CONV2D_{0}_SIMD] [CONV2D_{0}_WMEM] =\n".format(conv2d_counter))
                 file_object.write("{\n")
@@ -144,8 +142,8 @@ def parameters_extractor(model,ext_config,result_path=""):
                         for r in k:
                             file_object.write("{")
                             for m in r[0:-1]: 
-                                file_object.write(("{:02x}, " if m>0 else "{:03x}, ").format(m))
-                            file_object.write(("{:02x}}},\n" if r[-1]>0 else "{:03x}}},\n").format(r[-1]))
+                                file_object.write(("{:02x}, " if m>=0 else "{:03x}, ").format(m))
+                            file_object.write(("{:02x}}},\n" if r[-1]>=0 else "{:03x}}},\n").format(r[-1]))
                         file_object.write("};\n")
                     file_object.write("};\n")
                 file_object.write("};\n")
@@ -154,29 +152,28 @@ def parameters_extractor(model,ext_config,result_path=""):
                     file_object.write("static ap_uint<CONV2D_{0}_BIAS_BITS> conv2d_{0}_bias [CONV2D_{0}_PE][CONV2D_{0}_BMEM] =\n".format(conv2d_counter))
                     file_object.write("{\n{\n")
                     for j in i.int_bias()[0:-1]:
-                        file_object.write(("{:02x},\n" if j>0 else "{:03x},\n").format(j))
-                    file_object.write(("{:02x}\n" if i.int_bias()[-1]>0 else "{:03x}\n").format(i.int_bias()[-1]))
+                        file_object.write(("{:02x},\n" if j>=0 else "{:03x},\n").format(j))
+                    file_object.write(("{:02x}\n" if i.int_bias()[-1]>=0 else "{:03x}\n").format(i.int_bias()[-1]))
                     file_object.write("}\n};\n")
                 conv2d_counter += 1
 
         # Extract Fully Connected layers Weight & Bias
-        print("Extracting classifier weight & bias")
         fullyconn_counter=0
-        for i in model.classifier:
+        for i in tqdm(model.classifier,desc='Extracting classifier weight & bias'):
             if isinstance(i,brevitas.nn.quant_linear.QuantLinear):
                 file_object.write("FullyConnected_{}_WEIGHT\n".format(fullyconn_counter))
                 file_object.write("{\n")
                 for row in i.int_weight():
                     file_object.write("{")
                     for val in row[0:-1]:
-                        file_object.write(("{:02x}, " if val>0 else "{:03x}, ").format(val))
-                    file_object.write(("{:02x}}};\n" if row[-1]>0 else "{:03x}}};\n").format(row[-1]))
+                        file_object.write(("{:02x}, " if val>=0 else "{:03x}, ").format(val))
+                    file_object.write(("{:02x}}};\n" if row[-1]>=0 else "{:03x}}};\n").format(row[-1]))
                 file_object.write("\n")
                 if i.is_bias_quant_enabled:
                     file_object.write("FullyConnected_{}_BIAS\n{{\n".format(fullyconn_counter))
                     for val in i.int_bias()[0:-1]:
-                        file_object.write(("{:02x}, " if val>0 else "{:03x}, ").format(val))
-                    file_object.write(("{:02x}}}\n" if i.int_bias()[-1]>0 else "{:03x}}}\n").format(i.int_bias()[-1]))
+                        file_object.write(("{:02x}, " if val>=0 else "{:03x}, ").format(val))
+                    file_object.write(("{:02x}}}\n" if i.int_bias()[-1]>=0 else "{:03x}}}\n").format(i.int_bias()[-1]))
                     file_object.write(";\n")
                 fullyconn_counter += 1
         res_path=file_object.name
