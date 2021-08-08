@@ -7,3 +7,7 @@
 
 5. Dev barnch has some extra features -torch.cat()- to install: 
     pip3 install -e git://github.com/Xilinx/brevitas.git@dev#egg=brevitas
+
+6. `Int8Bias` means you have that `bias_bit_width()` is set at 8, while `quant_bias_scale() = quant_weight_scale() * quant_input_scale()`.
+
+7. If you used the `Int8BiasPerTensorFixedPoint` quantizer you would have had that `quant_bias_scale()` was a standalone value, indipendent of input and weight.
