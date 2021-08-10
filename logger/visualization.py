@@ -6,7 +6,7 @@ class TensorboardWriter():
     def __init__(self, log_dir, logger, enabled):
         self.writer = None
         self.selected_module = ""
-
+        self.logger=logger
         if enabled:
             log_dir = str(log_dir)
 
@@ -65,7 +65,7 @@ class TensorboardWriter():
                     try:
                         add_data(tag, data, self.step, *args, **kwargs)
                     except ValueError:
-                        logger.warning("Got ValuError while adding data in visualiztion tag:{}".format(tag))
+                        self.logger.warning("Got ValuError while adding data in visualiztion tag:{}".format(tag))
             return wrapper
         else:
             # default action for returning methods defined in this class, set_step() for instance.

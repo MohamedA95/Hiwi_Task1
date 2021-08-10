@@ -16,11 +16,12 @@ cfgs = {
 }
 BIAS_QUANTIZER = Int8Bias
 WEIGHT_QUANTIZER = Int8WeightPerTensorFixedPoint
+ACT_QUANTIZER = Int8ActPerTensorFixedPoint
 class QuantVGG_pure(nn.Module):
 
     def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000, pretrained_model=None):
         super(QuantVGG_pure, self).__init__()
-        self.inp_quant = qnn.QuantIdentity(bit_width=bit_width, return_quant_tensor=True)
+        self.inp_quant = qnn.QuantIdentity(bit_width=bit_width, act_quant=ACT_QUANTIZER, return_quant_tensor=True)
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = qnn.QuantAdaptiveAvgPool2d((7, 7))        
         self.classifier = nn.Sequential(
