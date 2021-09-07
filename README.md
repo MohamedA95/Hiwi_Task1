@@ -28,43 +28,167 @@ config.json is a json file that descrips the expermit to run, sevral examples ar
 ### **Keys dictionary**
 
 #### **arch**
-The architecure can be defined using this key. The value should be a dictionary with two parameters `type` & `args`. types can be `{VGG_net,QuantVGG,vgg16,alexnet}`.\
-VGG_net: Local implementation of VGG.\
-QuantVGG: Quantized VGG using xilinx-brevitas.\
-vgg16 & alexnet: Are the respective models taken from Pytorch.\
-For the required arguments check respective class defination.
+The architecure can be defined using this key. The value should be a dictionary with two parameters `type` & `args`. Types can be `{VGG_net,QuantVGG_pure,vgg16,alexnet}`.\
+`VGG_net`: Local implementation of VGG.\
+`QuantVGG_pure`: Quantized VGG using xilinx-brevitas.\
+`vgg16` & `alexnet`: Are the respective models taken from Pytorch.\
+\
+Example of `QuantVGG_pure` 
+```json
+"arch": {
+        "type": "QuantVGG_pure",
+        "args": {
+            "VGG_type":"D", 
+            "batch_norm":false, 
+            "bit_width":16, 
+            "num_classes":1000,
+            "pretrained_model":"/path/" //Path to pretrained model or use pytorch to initialize with pytorch's version of the model
+        }
+    }
+```
+Example of `VGG_net`
+```json
+"arch": {
+        "type": "VGG_net",
+        "args": {
+            "in_channels":3, 
+            "num_classes":1000,
+            "VGG_type":"D", 
+            "batch_norm":true
+        }
+    }
+```
+Example of `vgg16`
+```json
+"arch": {
+        "type": "vgg16",
+        "args": {
+            "pretrained":true, 
+            "progress":true
+        }
+    }
+```
 
 #### **data_loader**
-to do
+Example of `CIFAR_data_loader`
+```json
+    "data_loader": {
+        "type": "CIFAR_data_loader",
+        "args":{
+            "data_dir": "/Path/to/Data_set",
+            "batch_size": 512,
+            "download": true,
+            "shuffle": true,
+            "validation_split": 0.1,
+            "num_workers": 5,
+            "flavor": 100,
+            "training": true
+        }
+    }
+```
+Example of `ImageNet_data_loader`
+```json
+    "data_loader": {
+        "type": "ImageNet_data_loader",
+        "args":{
+            "data_dir": "/Path/to/Data_set",
+            "batch_size": 512,
+            "shuffle": true,
+            "num_workers": 5,
+            "pin_memory":true,
+            "training": true
+        }
+    }
+```
 
 
 #### **test_data_loader**
-to do
-
+Example of CIFER `test_data_loader`
+```json
+    "data_loader": {
+        "type": "CIFAR_data_loader",
+        "args":{
+            "data_dir": "/Path/to/Data_set",
+            "batch_size": 512,
+            "download": true,
+            "shuffle": true,
+            "validation_split": 0.0,
+            "num_workers": 5,
+            "flavor": 100,
+            "training": false
+        }
+    }
+```
 
 #### **loss**
 to do
 
 
 #### **metrics**
-to do
-
+Metrics used to evaluate the model, currently defined metrics are `accuracy` & `top_k_acc`. New metrics can be defined under `model/metric.py`.
 
 #### **lr_scheduler**
-to do
-
-
+Example of StepLR
+```json
+"lr_scheduler": {
+    "type": "StepLR",
+    "args": {
+        "step_size": 30,
+        "gamma": 0.1,
+        "verbose": true
+    }
+}
+```
+Example of MultiStepLR
+```json
+"lr_scheduler": {
+    "type": "MultiStepLR",
+    "args": {
+        "milestones": [60,120,160],
+        "gamma": 0.2,
+        "verbose": true
+    }
+}
+```
 #### **trainer**
-to do
+Example of trainer config
+```json
+"trainer": {
+    "epochs": 200,
+    "save_dir": "/Where/to/save/train_result",
+    "save_period": 200,
+    "verbosity": 2,                 // 0: quiet, 1: per epoch, 2: full
+    "monitor": "max val_accuracy", 
+    "early_stop": -1,
+    "tensorboard": true
+}
+```
+
 
 
 #### **extract**
-to do
-
+If set the model parameters will be extracted during testing 
+```json
+"extract": true,
+```
 
 #### **extractor**
-to do
-
+Configrations to be used in the resulting config.h file
+```json
+"extractor": {
+    "PE": 1,
+    "SIMD": 1,
+    "DATAWIDTH": 64,
+    "SEQUENCE_LENGTH": 120000,
+    "CLASS_LABEL_BITS": 1,
+    "MUL_BITS": 16,
+    "MUL_INT_BITS": 8,
+    "ACC_BITS": 16,
+    "ACC_INT_BITS": 8,
+    "IA_BITS": 8,
+    "IA_INT_BITS": 4
+}
+```
 ## To Do
--No need to create a new folder when resuming traning
+-No need to create a new folder when resuming traning\
 -Generic model initialization from PyTorch
