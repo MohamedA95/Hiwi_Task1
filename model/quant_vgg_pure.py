@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+import brevitas
 import brevitas.nn as qnn
-from .common import print_config
 from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8WeightPerTensorFloat
-from brevitas.quant import Int8Bias, Int8BiasPerTensorFloatInternalScaling, Int16Bias, IntBias
+from brevitas.quant import Int8Bias, Int8BiasPerTensorFloatInternalScaling, Int8BiasPerTensorFixedPointInternalScaling, Int16Bias, IntBias
 from .vgg import *
 
 cfgs = {
@@ -14,24 +14,38 @@ cfgs = {
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
-BIAS_QUANTIZER = Int8Bias
+BIAS_QUANTIZER = Int16Bias
 WEIGHT_QUANTIZER = Int8WeightPerTensorFixedPoint
 ACT_QUANTIZER = Int8ActPerTensorFixedPoint
+RETURN_QUANT_TENSOR = True
 class QuantVGG_pure(nn.Module):
 
     def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000, pretrained_model=None):
         super(QuantVGG_pure, self).__init__()
-        self.inp_quant = qnn.QuantIdentity(bit_width=bit_width, act_quant=ACT_QUANTIZER, return_quant_tensor=True)
+        self.inp_quant = qnn.QuantIdentity(bit_width=bit_width, act_quant=ACT_QUANTIZER, return_quant_tensor=RETURN_QUANT_TENSOR)
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = qnn.QuantAdaptiveAvgPool2d((7, 7))        
         self.classifier = nn.Sequential(
-            qnn.QuantLinear(512 * 7 * 7, 4096, bias=True, weight_bit_width=bit_width, bias_quant=BIAS_QUANTIZER,weight_quant=WEIGHT_QUANTIZER, return_quant_tensor=True),
-            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=True),
+            qnn.QuantLinear(512 * 7 * 7, 4096, 
+                            bias=True, 
+                            weight_bit_width=bit_width,
+                            bias_quant=BIAS_QUANTIZER,
+                            weight_quant=WEIGHT_QUANTIZER,
+                            return_quant_tensor=RETURN_QUANT_TENSOR),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=RETURN_QUANT_TENSOR),
             qnn.QuantDropout(),
-            qnn.QuantLinear(4096, 4096, bias=True, weight_bit_width=bit_width, bias_quant=BIAS_QUANTIZER,weight_quant=WEIGHT_QUANTIZER, return_quant_tensor=True),
-            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=True),
-            qnn.QuantDropout(),
-            qnn.QuantLinear(4096, num_classes, bias=False, weight_bit_width=bit_width),
+            qnn.QuantLinear(4096, 4096, 
+                            bias=True, 
+                            weight_bit_width=bit_width,
+                            bias_quant=BIAS_QUANTIZER,
+                            weight_quant=WEIGHT_QUANTIZER,
+                            return_quant_tensor=RETURN_QUANT_TENSOR),
+            qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=RETURN_QUANT_TENSOR),
+            nn.Dropout(),
+            qnn.QuantLinear(4096, num_classes, 
+                            bias=False, 
+                            weight_bit_width=bit_width,
+                            return_quant_tensor=False),
         )
         self.classifier[0].cache_inference_quant_bias=True
         self.classifier[3].cache_inference_quant_bias=True
@@ -42,6 +56,7 @@ class QuantVGG_pure(nn.Module):
         if pretrained_model == None:
             self._initialize_weights()
         else:
+            pre_model=None
             if pretrained_model == 'pytorch':
                 print("Initializing with pretrained model from PyTorch")
                 pre_model=models.vgg16(pretrained=True) # use pytorch's pretrained model
@@ -55,8 +70,10 @@ class QuantVGG_pure(nn.Module):
                     pre_model=VGG_net(VGG_type=VGG_type,batch_norm=batch_norm,num_classes=num_classes)
                     pre_model.load_state_dict(unwrapped_sd)
                 else:
+                    print()
                     pre_model.load_state_dict(loaded_model)
             self._initialize_custom_weights(pre_model)
+        print("Initialization Done")
 
     def forward(self, x):
         x = self.inp_quant(x)
@@ -96,7 +113,7 @@ class QuantVGG_pure(nn.Module):
                 nn.init.normal_(l.weight, 0, 0.01)
                 if isinstance(l.bias,torch.nn.parameter.Parameter):
                     nn.init.constant_(l.bias, 0)
-        print("Initialization Done")
+
 
 def make_layers(cfg, batch_norm, bit_width):
     layers = []
@@ -105,13 +122,27 @@ def make_layers(cfg, batch_norm, bit_width):
         if v == 'M':
             layers += [qnn.QuantMaxPool2d(kernel_size=2, stride=2)]
         else:
-            conv2d = qnn.QuantConv2d(in_channels, v, kernel_size=3, stride=1, padding=1, groups=1, weight_bit_width=bit_width, bias_quant=BIAS_QUANTIZER,weight_quant=WEIGHT_QUANTIZER, return_quant_tensor=True)
+            conv2d = qnn.QuantConv2d(in_channels, v, 
+                                    kernel_size=3, 
+                                    stride=1, 
+                                    padding=1, 
+                                    groups=1, 
+                                    weight_bit_width=bit_width, 
+                                    bias_quant=BIAS_QUANTIZER,
+                                    weight_quant=WEIGHT_QUANTIZER, 
+                                    return_quant_tensor=RETURN_QUANT_TENSOR)
             conv2d.cache_inference_quant_out = True
             conv2d.cache_inference_quant_bias = True
-            act = qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=True)
+            act = qnn.QuantReLU(bit_width=bit_width, return_quant_tensor=RETURN_QUANT_TENSOR)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), act]
             else:
                 layers += [conv2d, act]
             in_channels = v
     return nn.Sequential(*layers)
+
+def print_config():
+    print("Brevitas version: ", brevitas.__version__)
+    print("BIAS_QUANTIZER: ",BIAS_QUANTIZER)
+    print("WEIGHT_QUANTIZER: ",WEIGHT_QUANTIZER)
+    print("ACT_QUANTIZER: ",ACT_QUANTIZER)

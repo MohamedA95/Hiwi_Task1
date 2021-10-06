@@ -3,3 +3,8 @@ torchvision
 numpy
 tqdm
 tensorboard>=1.14
+pandas
+python-dateutil
+pytorch-model-summary 
+pytorch
+brevitas
