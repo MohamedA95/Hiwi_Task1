@@ -42,7 +42,7 @@ Example of `QuantVGG_pure`
             "batch_norm":false, 
             "bit_width":16, 
             "num_classes":1000,
-            "pretrained_model":"/path/" //Path to pretrained model or use pytorch to initialize with pytorch's version of the model
+            "pretrained_model":"Path to pretrained model or use pytorch to initialize with pytorch's version of the model"
         }
     }
 ```
