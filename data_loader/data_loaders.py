@@ -1,3 +1,4 @@
+from torch.utils.data import DataLoader, DistributedSampler, random_split
 from torchvision import datasets, transforms
 from base import BaseDataLoader
 import os.path
@@ -49,9 +50,14 @@ class CIFAR_data_loader(BaseDataLoader):
             self.dataset = datasets.CIFAR100(
                 data_dir, train=training, download=download, transform=preprocess)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
+
+class dist_CIFAR_data_loader():
+    def __init__(self, dataset, batch_size=4, shuffle=True, validation_split=0.1, num_workers=0):
+
+
+
+
 # Based on https://github.com/pytorch/examples/blob/master/imagenet/main.py
-
-
 class ImageNet_data_loader(BaseDataLoader):
     """
         ImageNet data loader
