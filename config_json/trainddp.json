@@ -1,0 +1,74 @@
+{
+    "name": "trainddp",
+    "n_gpu": -1,
+    "seed":123,
+    
+    "arch": {
+        "type": "QuantVGG_pure",
+        "args": {
+            "VGG_type":"D", 
+            "batch_norm":false, 
+            "bit_width":8, 
+            "num_classes":1000
+        }
+    },
+    "data_loader": {
+        "type": "CIFAR_data_loader",
+        "args":{
+            "data_dir": "/scratch/mmoursi",
+            "batch_size": 512,
+            "download": true,
+            "shuffle": true,
+            "validation_split": 0.1,
+            "num_workers": 5,
+            "flavor": 100,
+            "training": true
+        }
+    }
+,
+
+    "optimizer": {
+        "type": "SGD",
+        "args": {
+            "lr": 0.01,
+            "momentum": 0.9,
+            "weight_decay": 0.0005
+        }
+    },
+    "loss": "CrossEntropy",
+    "metrics": [
+        "accuracy", "top_k_acc"
+    ],
+    "lr_scheduler": {
+        "type": "ReduceLROnPlateau",
+        "args": {
+            "mode": "max",
+            "factor": 0.1,
+            "verbose": true
+        },
+        "metric": "val_accuracy"
+    },
+    "trainer": {
+        "epochs": 90,
+        "save_dir": "/scratch/mmoursi/train_result",
+        "save_period": 90,
+        "verbosity": 1,
+        "monitor": "max val_accuracy",
+        "early_stop": -1,
+        "tensorboard": false
+    },
+    "extract": false,
+    "extractor": {
+        "PE": 1,
+        "SIMD": 1,
+        "DATAWIDTH": 64,
+        "SEQUENCE_LENGTH": 120000,
+        "CLASS_LABEL_BITS": 1,
+        "MUL_BITS": 16,
+        "MUL_INT_BITS": 8,
+        "ACC_BITS": 16,
+        "ACC_INT_BITS": 8,
+        "IA_BITS": 8,
+        "IA_INT_BITS": 4
+    }
+}
