@@ -191,4 +191,5 @@ Configrations to be used in the resulting config.h file
 ```
 ## To Do
 -No need to create a new folder when resuming traning\
--Generic model initialization from PyTorch
+-Generic model initialization from PyTorch\
+-Resume from checkpoint in DDP is not tested

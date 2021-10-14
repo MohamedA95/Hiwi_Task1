@@ -1,7 +1,9 @@
 import torch
+import torch.distributed as dist
 from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
+from utils import is_master
 
 
 class BaseTrainer:
@@ -9,7 +11,7 @@ class BaseTrainer:
     Base class for all trainers
     """
 
-    def __init__(self, model, criterion, metric_ftns, optimizer, config):
+    def __init__(self, model, criterion, metric_ftns, optimizer, config,train_sampler=None):
         self.config = config
         self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
 
@@ -22,9 +24,10 @@ class BaseTrainer:
         self.epochs = cfg_trainer['epochs']
         self.save_period = cfg_trainer['save_period']
         self.monitor = cfg_trainer.get('monitor', 'off')
+        self.train_sampler=train_sampler
 
         # configuration to monitor model performance and save best
-        if self.monitor == 'off':
+        if not is_master or self.monitor == 'off':
             self.mnt_mode = 'off'
             self.mnt_best = 0
         else:
@@ -41,7 +44,10 @@ class BaseTrainer:
         self.checkpoint_dir = config.save_dir
 
         # setup visualization writer instance                
-        self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
+        if is_master():
+            self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
+        else:
+            self.writer = TensorboardWriter(config.log_dir, self.logger, False)
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
@@ -61,6 +67,8 @@ class BaseTrainer:
         """
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
+            if self.config['ddp_enable']:
+                self.train_sampler.set_epoch(epoch)
             result = self._train_epoch(epoch)
 
             # save logged informations into log dict
@@ -95,15 +103,16 @@ class BaseTrainer:
                 if not_improved_count > self.early_stop:
                     self.logger.info("Validation performance didn\'t improve for {} epochs. "
                                      "Training stops.".format(self.early_stop))
-                    break
-
-            if epoch % self.save_period == 0 or best:
+                    exit(1)
+            if is_master() and epoch % self.save_period == 0 or best:
                 state=self._generate_model_state(epoch)
                 if epoch % self.save_period == 0:
                     self._save_checkpoint(epoch, state)
                 if best:
                     self._save_best(state)
-                
+            if self.config['ddp_enable']:
+                dist.barrier()
+            
 
     def _save_best(self, state):
         """

@@ -1,7 +1,10 @@
 {
     "name": "trainddp",
-    "n_gpu": -1,
+    "n_gpu": 1,
     "seed":123,
+    "ddp_enable":true,
+    "dist_backend":"nccl",
+    "dist_url":"tcp://127.0.0.1:34567",
     
     "arch": {
         "type": "QuantVGG_pure",
@@ -9,16 +12,14 @@
             "VGG_type":"D", 
             "batch_norm":false, 
             "bit_width":8, 
-            "num_classes":1000
+            "num_classes":100
         }
     },
     "data_loader": {
-        "type": "CIFAR_data_loader",
+        "type": "dist_CIFAR_data_loader",
         "args":{
             "data_dir": "/scratch/mmoursi",
             "batch_size": 512,
-            "download": true,
-            "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 5,
             "flavor": 100,
