@@ -38,7 +38,7 @@ def main(config):
 def main_worker(rank,config):
     config.config['rank']=rank
     logger = config.get_logger('Train{}'.format(rank))
-    logger.warning('Using GPU: {} for training'.format(rank))
+    logger.info('Using GPU: {} for training'.format(rank))
     dist.init_process_group(config['dist_backend'],init_method=config['dist_url'], rank=rank, world_size=config['n_gpu'])
     # setup data_loader instances
     data_loader_obj = config.init_obj('data_loader', module_data)
