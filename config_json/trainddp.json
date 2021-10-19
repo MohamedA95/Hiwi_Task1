@@ -1,8 +1,7 @@
 {
     "name": "trainddp",
-    "n_gpu": 1,
+    "n_gpu": 2,
     "seed":123,
-    "ddp_enable":true,
     "dist_backend":"nccl",
     "dist_url":"tcp://127.0.0.1:34567",
     
@@ -15,13 +14,14 @@
             "num_classes":100
         }
     },
+    
     "data_loader": {
         "type": "dist_CIFAR_data_loader",
         "args":{
-            "data_dir": "/scratch/mmoursi",
-            "batch_size": 512,
+            "data_dir": "data/",
+            "batch_size": 128,
             "validation_split": 0.1,
-            "num_workers": 5,
+            "num_workers": 2,
             "flavor": 100,
             "training": true
         }
@@ -50,13 +50,13 @@
         "metric": "val_accuracy"
     },
     "trainer": {
-        "epochs": 90,
-        "save_dir": "/scratch/mmoursi/train_result",
+        "epochs": 1,
+        "save_dir": "saved/",
         "save_period": 90,
-        "verbosity": 1,
+        "verbosity": 2,
         "monitor": "max val_accuracy",
         "early_stop": -1,
-        "tensorboard": false
+        "tensorboard": true
     },
     "extract": false,
     "extractor": {

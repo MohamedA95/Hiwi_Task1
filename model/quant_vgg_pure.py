@@ -3,10 +3,12 @@ import torch.nn as nn
 import torchvision.models as models
 import brevitas
 import brevitas.nn as qnn
+# import logging
 from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8WeightPerTensorFloat
 from brevitas.quant import Int8Bias, Int8BiasPerTensorFloatInternalScaling, Int8BiasPerTensorFixedPointInternalScaling, Int16Bias, IntBias
 from .vgg import *
+from utils import is_master
 
 cfgs = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -50,8 +52,9 @@ class QuantVGG_pure(nn.Module):
         self.classifier[0].cache_inference_quant_bias=True
         self.classifier[3].cache_inference_quant_bias=True
         self.classifier[6].cache_inference_quant_bias=True
-
-        print_config()
+        # self.logger=logging.getLogger("QVGG")
+        if is_master():
+            print_config()
 
         if pretrained_model == None:
             self._initialize_weights()
@@ -70,7 +73,6 @@ class QuantVGG_pure(nn.Module):
                     pre_model=VGG_net(VGG_type=VGG_type,batch_norm=batch_norm,num_classes=num_classes)
                     pre_model.load_state_dict(unwrapped_sd)
                 else:
-                    print()
                     pre_model.load_state_dict(loaded_model)
             self._initialize_custom_weights(pre_model)
         print("Initialization Done")

@@ -8,14 +8,14 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model as module_arch
 from parse_config import ConfigParser
-from utils import parameters_extractor,str2bool
+from utils import parameters_extractor,str2bool,get_logger
 
 
 def main(config):
-    logger = config.get_logger('test')
+    logger = get_logger(name=__name__,log_dir=config.log_dir,test=True,verbosity=config['trainer']['verbosity'])
     # setup data_loader instances
-    data_loader = config.init_obj('test_data_loader', module_data)
-
+    data_loader_obj = config.init_obj('test_data_loader', module_data)
+    test_data_loader = data_loader_obj.get_test_loader()
     # build model architecture
     model = config.init_obj('arch', module_arch)
 
@@ -26,8 +26,7 @@ def main(config):
     logger.info('Loading checkpoint: {} ...'.format(config.resume))
     checkpoint = torch.load(config.resume)
     state_dict = checkpoint['state_dict']
-    if config['n_gpu'] > 1:
-        model = torch.nn.DataParallel(model)
+    torch.nn.modules.utils.consume_prefix_in_state_dict_if_present(state_dict,"module.")
     model.load_state_dict(state_dict)
 
     # prepare model for testing
@@ -40,14 +39,10 @@ def main(config):
     total_metrics = torch.zeros(len(metric_fns))
 
     with torch.no_grad():
-        for i, (data, target) in enumerate(tqdm(data_loader)):
+        for i, (data, target) in enumerate(tqdm(test_data_loader)):
             data = data.to(device)
             target = target.to(device)
             output = model(data)
-
-            #
-            # save sample images, or do something with output here
-            #
 
             # computing loss, metrics on test set
             loss = loss_fn(output, target)
@@ -56,7 +51,7 @@ def main(config):
             for i, metric in enumerate(metric_fns):
                 total_metrics[i] += metric(output, target) * batch_size
 
-    n_samples = len(data_loader.sampler)
+    n_samples = len(test_data_loader.sampler)
     log = {'loss': total_loss / n_samples}
     log.update({
         met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)
@@ -64,7 +59,7 @@ def main(config):
     if 'extract' in config._config:
         if str2bool(config['extract']):
             logger.info("Extracting Parameters\n")
-            logger.info(parameters_extractor(model,config['extractor']))
+            logger.info(parameters_extractor(model,config['extractor'],config.log_dir))
     logger.info(log)
 
 

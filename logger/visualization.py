@@ -1,14 +1,14 @@
 import importlib
 from datetime import datetime
-
+from utils import get_logger
 
 class TensorboardWriter():
-    def __init__(self, log_dir, logger, enabled):
+    def __init__(self, config, enabled):
         self.writer = None
         self.selected_module = ""
-        self.logger=logger
+        self.logger=get_logger(name=__name__,log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
         if enabled:
-            log_dir = str(log_dir)
+            log_dir = str(config.log_dir)
 
             # Retrieve vizualization writer.
             succeeded = False

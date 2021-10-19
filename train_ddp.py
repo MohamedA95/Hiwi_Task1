@@ -13,12 +13,12 @@ import torch.multiprocessing as mp
 from torchinfo import summary
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import prepare_device
+from utils import prepare_device,get_logger
 
 
 def main(config):
     
-    logger = config.get_logger('train')
+    logger = get_logger(name=__name__,log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
     if config['n_gpu'] == -1:
         config.config['n_gpu']= torch.cuda.device_count()
     
@@ -28,16 +28,16 @@ def main(config):
         torch.backends.cudnn.benchmark = False
         np.random.seed(config['seed'])
         random.seed(config['seed'])
-        logger.warning('You have chosen to seed training. '
-                      'This will turn on the CUDNN deterministic setting, '
-                      'which can slow down your training considerably! '
+        logger.warning('You seeded the training. '
+                      'This turns on the CUDNN deterministic setting, '
+                      'which can slow down your training '
                       'You may see unexpected behavior when restarting '
                       'from checkpoints.')
     mp.spawn(main_worker, nprocs=config['n_gpu'], args=(config,))
 
 def main_worker(rank,config):
     config.config['rank']=rank
-    logger = config.get_logger('Train{}'.format(rank))
+    logger = get_logger('Worker{}'.format(rank),log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
     logger.info('Using GPU: {} for training'.format(rank))
     dist.init_process_group(config['dist_backend'],init_method=config['dist_url'], rank=rank, world_size=config['n_gpu'])
     # setup data_loader instances
@@ -51,7 +51,7 @@ def main_worker(rank,config):
     model.cuda(rank)
     config.config['data_loader']['args']['batch_size']//=config['n_gpu']
     device, device_ids = prepare_device(config['n_gpu'])
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank],output_device=rank)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank],output_device=rank,find_unused_parameters=True)
     if rank==0:
         logger.info(config['name'])
         trainable_params = filter(lambda p: p.requires_grad, model.parameters())

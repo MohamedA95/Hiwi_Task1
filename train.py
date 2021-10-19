@@ -23,7 +23,7 @@ np.random.seed(SEED)
 random.seed(SEED)
 
 def main(config):
-    logger = config.get_logger('train')
+    logger = get_logger(name=__name__,log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
 
     # setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)

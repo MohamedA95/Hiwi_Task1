@@ -86,7 +86,8 @@ class Trainer(BaseTrainer):
         self.valid_metrics.reset()
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(self.valid_data_loader):
-                data, target = data.to(self.device), target.to(self.device)
+                data =  data.to(self.device, non_blocking=True)
+                target = target.to(self.device, non_blocking=True)
 
                 output = self.model(data)
                 loss = self.criterion(output, target)

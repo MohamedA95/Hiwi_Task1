@@ -1,10 +1,12 @@
 import json
 import torch
 import pandas as pd
+import torch.distributed as dist
+import logging
+import logging.config
 from pathlib import Path
 from itertools import repeat
 from collections import OrderedDict
-import torch.distributed as dist
 
 
 def ensure_dir(dirname):
@@ -56,6 +58,24 @@ def str2bool(v):
 
 def is_master():
     return not dist.is_initialized() or dist.get_rank() == 0
+
+def get_logger(name=None,log_dir='saved/',test=False,verbosity=2):
+    log_levels = {0: logging.WARNING,1: logging.INFO,2: logging.DEBUG}
+    if is_master():
+        log_config = 'logger/test_logger_config.json' if test else 'logger/train_logger_config.json'
+        log_config = Path(log_config)
+        if log_config.is_file():
+            config = read_json(log_config)
+            for _, handler in config['handlers'].items():
+                if 'filename' in handler:
+                    handler['filename'] = str(log_dir / handler['filename'])
+            logging.config.dictConfig(config)
+        else:
+            print("Warning: logging configuration file is not found in {}.".format(log_config))
+            logging.basicConfig(level=logging.INFO)
+    logger=logging.getLogger(name)
+    logger.setLevel(log_levels[verbosity])
+    return logger
 
 class MetricTracker:
     def __init__(self, *keys, writer=None):

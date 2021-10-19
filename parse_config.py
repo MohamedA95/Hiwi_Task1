@@ -4,7 +4,6 @@ from pathlib import Path
 from functools import reduce, partial
 from operator import getitem
 from datetime import datetime
-from logger import setup_logging
 from utils import read_json, write_json
 
 
@@ -46,16 +45,6 @@ class ConfigParser:
         if not test:
             write_json(self.config, self.save_dir / 'config.json')
 
-        # configure logging module
-        if test:
-            setup_logging(save_dir=self.log_dir,log_config='logger/test_logger_config.json')
-        else:
-            setup_logging(save_dir=self.log_dir,log_config='logger/train_logger_config.json')
-        self.log_levels = {
-            0: logging.WARNING,
-            1: logging.INFO,
-            2: logging.DEBUG
-        }
 
     @classmethod
     def from_args(cls, args, options='',test=False):
@@ -120,13 +109,6 @@ class ConfigParser:
     def __getitem__(self, name):
         """Access items like ordinary dict."""
         return self.config[name]
-
-    def get_logger(self, name, verbosity=2):
-        msg_verbosity = 'verbosity option {} is invalid. Valid options are {}.'.format(verbosity, self.log_levels.keys())
-        assert verbosity in self.log_levels, msg_verbosity
-        logger = logging.getLogger(name)
-        logger.setLevel(self.log_levels[verbosity])
-        return logger
 
     # setting read-only attributes
     @property

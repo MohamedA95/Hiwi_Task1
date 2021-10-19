@@ -77,17 +77,18 @@ class dist_CIFAR_data_loader():
             else:
                 len_valid = int(validation_split*len_set)
             len_train = len_set - len_valid
-            train_set, valid_set = random_split(
-                dataset, [len_train, len_valid])
+            train_set, valid_set = random_split(dataset, [len_train, len_valid])
             self.train_sampler = DistributedSampler(train_set)
-            self.valid_sampler = DistributedSampler(valid_set)
             self.train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=False, sampler=self.train_sampler, num_workers=num_workers, pin_memory=pin_memory)
-            self.valid_loader = DataLoader(valid_set, batch_size=batch_size, shuffle=False, sampler=self.valid_sampler, num_workers=num_workers, pin_memory=pin_memory)
-
+            self.valid_loader = DataLoader(valid_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+        else:
+            self.test_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
     def get_train_loader(self):
         return self.train_loader
     def get_valid_loader(self):
         return self.valid_loader
+    def get_test_loader(self):
+        return self.test_loader
 # Based on https://github.com/pytorch/examples/blob/master/imagenet/main.py
 
 
@@ -141,3 +142,57 @@ class ImageNet_data_loader(BaseDataLoader):
 
     def split_validation(self):
         return val_loader
+
+class dist_ImageNet_data_loader():
+    """
+        ImageNet data loader
+
+        Args:
+        data_dir (str): Directory where data set is saved, should have 
+                        three folders train, val & test
+        batch_size (int): Batch size
+        shuffle (bool):
+        num_workers (int): Number of workers
+        pin_memory (bool): 
+        training (bool):
+    """
+
+    val_loader = None
+
+    def __init__(self, data_dir, batch_size, shuffle=True, num_workers=0, pin_memory=True, training=True):
+        normalize = transforms.Normalize(
+            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        if training:
+            traindir = os.path.join(data_dir, 'train')
+            valdir = os.path.join(data_dir, 'val')
+            train_set = datasets.ImageFolder(traindir, transforms.Compose([
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+            ]))
+            valid_set = datasets.ImageFolder(valdir, transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize,
+            ]))
+            self.train_sampler = DistributedSampler(train_set)
+            self.train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=False, sampler=self.train_sampler, num_workers=num_workers, pin_memory=pin_memory)
+            self.valid_loader = DataLoader(valid_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+
+        else:
+            testdir = os.path.join(data_dir, 'test')
+            test_set = datasets.ImageFolder(testdir, transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize,
+            ]))
+            self.test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+    def get_train_loader(self):
+        return self.train_loader
+    def get_valid_loader(self):
+        return self.valid_loader
+    def get_test_loader(self):
+        return self.test_loader

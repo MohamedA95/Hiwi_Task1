@@ -3,7 +3,7 @@ import torch.distributed as dist
 from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
-from utils import is_master
+from utils import is_master,get_logger
 
 
 class BaseTrainer:
@@ -13,7 +13,7 @@ class BaseTrainer:
 
     def __init__(self, model, criterion, metric_ftns, optimizer, config,train_sampler=None):
         self.config = config
-        self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
+        self.logger = get_logger(name="{}{}".format(__name__,dist.get_rank()), log_dir=config.log_dir, verbosity=config['trainer']['verbosity'])
 
         self.model = model
         self.criterion = criterion
@@ -45,9 +45,9 @@ class BaseTrainer:
 
         # setup visualization writer instance                
         if is_master():
-            self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
+            self.writer = TensorboardWriter(config, cfg_trainer['tensorboard'])
         else:
-            self.writer = TensorboardWriter(config.log_dir, self.logger, False)
+            self.writer = TensorboardWriter(config, False)
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
@@ -67,8 +67,7 @@ class BaseTrainer:
         """
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
-            if self.config['ddp_enable']:
-                self.train_sampler.set_epoch(epoch)
+            self.train_sampler.set_epoch(epoch)
             result = self._train_epoch(epoch)
 
             # save logged informations into log dict
@@ -103,15 +102,15 @@ class BaseTrainer:
                 if not_improved_count > self.early_stop:
                     self.logger.info("Validation performance didn\'t improve for {} epochs. "
                                      "Training stops.".format(self.early_stop))
-                    exit(1)
-            if is_master() and epoch % self.save_period == 0 or best:
+                    dist.destroy_process_group()
+            if is_master() and (epoch % self.save_period == 0 or best):
                 state=self._generate_model_state(epoch)
                 if epoch % self.save_period == 0:
                     self._save_checkpoint(epoch, state)
                 if best:
                     self._save_best(state)
-            if self.config['ddp_enable']:
-                dist.barrier()
+            
+            dist.barrier()
             
 
     def _save_best(self, state):
