@@ -159,7 +159,7 @@ class dist_ImageNet_data_loader():
 
     val_loader = None
 
-    def __init__(self, data_dir, batch_size, shuffle=True, num_workers=0, pin_memory=True, training=True):
+    def __init__(self, data_dir, batch_size, num_workers=0, pin_memory=True, training=True):
         normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         if training:
