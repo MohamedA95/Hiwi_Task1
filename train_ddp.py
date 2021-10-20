@@ -22,10 +22,10 @@ def main(config):
     if config['n_gpu'] == -1:
         config.config['n_gpu']= torch.cuda.device_count()
     
+    torch.backends.cudnn.benchmark = True
     if config['seed'] is not None:
         torch.manual_seed(config['seed'])
         torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
         np.random.seed(config['seed'])
         random.seed(config['seed'])
         logger.warning('You seeded the training. '
