@@ -28,6 +28,7 @@ class BaseTrainer:
 
         # configuration to monitor model performance and save best
         if not is_master or self.monitor == 'off':
+            self.logger.info("From inside monitor control Rank {}".format(dist.get_rank()))
             self.mnt_mode = 'off'
             self.mnt_best = 0
         else:
@@ -81,6 +82,7 @@ class BaseTrainer:
             # evaluate model performance according to configured metric, save best checkpoint as model_best
             best = False
             if self.mnt_mode != 'off':
+                self.logger.info("From inside monitor Rank {}".format(dist.get_rank()))
                 try:
                     # check whether model performance improved or not, according to specified metric(mnt_metric)
                     improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \

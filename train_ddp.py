@@ -35,11 +35,11 @@ def main(config):
                       'from checkpoints.')
     mp.spawn(main_worker, nprocs=config['n_gpu'], args=(config,))
 
-def main_worker(rank,config):
-    config.config['rank']=rank
-    logger = get_logger('Worker{}'.format(rank),log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
-    logger.info('Using GPU: {} for training'.format(rank))
-    dist.init_process_group(config['dist_backend'],init_method=config['dist_url'], rank=rank, world_size=config['n_gpu'])
+def main_worker(gpu,config):
+    num_nodes=1
+    logger = get_logger('Worker{}'.format(gpu),log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
+    logger.info('Using GPU: {} for training'.format(gpu))
+    dist.init_process_group(backend=config['dist_backend'],init_method=config['dist_url'], world_size=num_nodes, rank=gpu) # Rank here is the process rank amoung all processes on all nodes, needs modification in case of multi node
     # setup data_loader instances
     data_loader_obj = config.init_obj('data_loader', module_data)
     data_loader = data_loader_obj.get_train_loader()
@@ -47,12 +47,13 @@ def main_worker(rank,config):
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
     # prepare for (multi-device) GPU training
-    torch.cuda.set_device(rank)
-    model.cuda(rank)
-    config.config['data_loader']['args']['batch_size']//=config['n_gpu']
+    torch.cuda.set_device(gpu)
+    model.cuda(gpu)
+    config.config['data_loader']['args']['batch_size']//=config['n_gpu']  #Needs modification to support multinode
+    config.config['data_loader']['args']['num_workers']//=config['n_gpu'] #Needs modification to support multinode
     device, device_ids = prepare_device(config['n_gpu'])
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank],output_device=rank,find_unused_parameters=True)
-    if rank==0:
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu],find_unused_parameters=True)
+    if gpu==0:
         logger.info(config['name'])
         trainable_params = filter(lambda p: p.requires_grad, model.parameters())
         summary(model,input_size=(config['data_loader']['args']['batch_size'], 3, 224, 224))
@@ -67,7 +68,7 @@ def main_worker(rank,config):
 
     trainer = Trainer(model, criterion, metrics, optimizer,
                       config=config,
-                      device=rank,
+                      device=gpu,
                       data_loader=data_loader,
                       valid_data_loader=valid_data_loader,
                       lr_scheduler=lr_scheduler,
