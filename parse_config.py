@@ -25,16 +25,17 @@ class ConfigParser:
         save_dir = Path(self.config['trainer']['save_dir'])
 
         exper_name = self.config['name']
-        if test and run_id is None:
-            run_id=resume.parent.name
+        # if it's resume or test use the old run_id
+        if (test or self.resume) and run_id is None:
+            run_id=self.resume.parent.parent.name
         elif run_id is None: # use timestamp as default run-id
             run_id = datetime.now().strftime(r'_%d_%m_%H%M%S')
             run_id = exper_name + run_id
         self._save_dir = save_dir / run_id / 'models' 
         self._log_dir = save_dir / run_id / 'log' 
 
-        # make directory for saving checkpoints and log.
-        if test:
+        # make directory for saving checkpoints and log unless it's resume or test.
+        if test or self.resume:
             exist_ok=True
         else:
             exist_ok = run_id == ''

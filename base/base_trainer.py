@@ -13,7 +13,11 @@ class BaseTrainer:
 
     def __init__(self, model, criterion, metric_ftns, optimizer, config,train_sampler=None):
         self.config = config
-        self.logger = get_logger(name="{}{}".format(__name__,dist.get_rank()), log_dir=config.log_dir, verbosity=config['trainer']['verbosity'])
+        if dist.is_initialized():
+            logger_name="{}{}".format(__name__,dist.get_rank())
+        else:
+            logger_name=__name__
+        self.logger = get_logger(name=logger_name, log_dir=config.log_dir, verbosity=config['trainer']['verbosity'])
 
         self.model = model
         self.criterion = criterion
@@ -68,7 +72,8 @@ class BaseTrainer:
         """
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
-            self.train_sampler.set_epoch(epoch)
+            if dist.is_initialized():
+                self.train_sampler.set_epoch(epoch)
             result = self._train_epoch(epoch)
 
             # save logged informations into log dict
@@ -82,7 +87,6 @@ class BaseTrainer:
             # evaluate model performance according to configured metric, save best checkpoint as model_best
             best = False
             if self.mnt_mode != 'off':
-                self.logger.info("From inside monitor Rank {}".format(dist.get_rank()))
                 try:
                     # check whether model performance improved or not, according to specified metric(mnt_metric)
                     improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
@@ -104,15 +108,16 @@ class BaseTrainer:
                 if not_improved_count > self.early_stop:
                     self.logger.info("Validation performance didn\'t improve for {} epochs. "
                                      "Training stops.".format(self.early_stop))
-                    dist.destroy_process_group()
+                    if dist.is_initialized():
+                        dist.destroy_process_group()
             if is_master() and (epoch % self.save_period == 0 or best):
                 state=self._generate_model_state(epoch)
                 if epoch % self.save_period == 0:
                     self._save_checkpoint(epoch, state)
                 if best:
                     self._save_best(state)
-            
-            dist.barrier()
+            if dist.is_initialized():
+                dist.barrier()
             
 
     def _save_best(self, state):
