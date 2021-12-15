@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision.models as models
 import brevitas
 import brevitas.nn as qnn
-# import logging
+import logging
 from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8WeightPerTensorFloat
 from brevitas.quant import Int8Bias, Int8BiasPerTensorFloatInternalScaling, Int8BiasPerTensorFixedPointInternalScaling, Int16Bias, IntBias
@@ -52,16 +52,16 @@ class QuantVGG_pure(nn.Module):
         self.classifier[0].cache_inference_quant_bias=True
         self.classifier[3].cache_inference_quant_bias=True
         self.classifier[6].cache_inference_quant_bias=True
-        # self.logger=logging.getLogger("QVGG")
+        self.logger=logging.getLogger('Worker0')
         if is_master():
-            print_config()
+            print_config(self.logger)
 
         if pretrained_model == None:
             self._initialize_weights()
         else:
             pre_model=None
             if pretrained_model == 'pytorch':
-                print("Initializing with pretrained model from PyTorch")
+                self.logger.info("Initializing with pretrained model from PyTorch")
                 pre_model=models.vgg16(pretrained=True) # use pytorch's pretrained model
             else:
                 pre_model=VGG_net(VGG_type=VGG_type,batch_norm=batch_norm,num_classes=num_classes)
@@ -75,7 +75,7 @@ class QuantVGG_pure(nn.Module):
                 else:
                     pre_model.load_state_dict(loaded_model)
             self._initialize_custom_weights(pre_model)
-        print("Initialization Done")
+        self.logger.info("Initialization Done")
 
     def forward(self, x):
         x = self.inp_quant(x)
@@ -86,7 +86,7 @@ class QuantVGG_pure(nn.Module):
         return x
 
     def _initialize_weights(self):
-        print("Initializing model")
+        self.logger.info("Initializing model")
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -101,7 +101,7 @@ class QuantVGG_pure(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
     def _initialize_custom_weights(self,old_model):
-        print("Initializing model with custom weights & bias")
+        self.logger.info("Initializing model with custom weights & bias")
         for n, o in zip(self.features,old_model.features):
             if isinstance(n,nn.Conv2d):
                 n.weight.data=o.weight.data
@@ -143,8 +143,8 @@ def make_layers(cfg, batch_norm, bit_width):
             in_channels = v
     return nn.Sequential(*layers)
 
-def print_config():
-    print("Brevitas version: ", brevitas.__version__)
-    print("BIAS_QUANTIZER: ",BIAS_QUANTIZER)
-    print("WEIGHT_QUANTIZER: ",WEIGHT_QUANTIZER)
-    print("ACT_QUANTIZER: ",ACT_QUANTIZER)
+def print_config(logger):
+    logger.info("Brevitas version: ", brevitas.__version__)
+    logger.info("BIAS_QUANTIZER: ",BIAS_QUANTIZER)
+    logger.info("WEIGHT_QUANTIZER: ",WEIGHT_QUANTIZER)
+    logger.info("ACT_QUANTIZER: ",ACT_QUANTIZER)

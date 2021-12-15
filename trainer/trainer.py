@@ -42,8 +42,8 @@ class Trainer(BaseTrainer):
         for batch_idx, (data, target) in enumerate(self.data_loader):
             data = data.to(self.device, non_blocking=True)
             target = target.to(self.device, non_blocking=True)
-            self.optimizer.zero_grad()
             output = self.model(data)
+            self.optimizer.zero_grad()
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()

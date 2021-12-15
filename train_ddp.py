@@ -36,11 +36,12 @@ def main(config):
     mp.spawn(main_worker, nprocs=config['n_gpu'], args=(config,))
 
 def main_worker(gpu,config):
-    num_nodes=1
     logger = get_logger('Worker{}'.format(gpu),log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
     logger.info('Using GPU: {} for training'.format(gpu))
-    dist.init_process_group(backend=config['dist_backend'],init_method=config['dist_url'], world_size=num_nodes, rank=gpu) # Rank here is the process rank amoung all processes on all nodes, needs modification in case of multi node
+    dist.init_process_group(backend=config['dist_backend'],init_method=config['dist_url'], world_size=config['n_gpu'], rank=gpu) # Rank here is the process rank amoung all processes on all nodes, needs modification in case of multi node
     # setup data_loader instances
+    config.config['data_loader']['args']['batch_size']//=config['n_gpu']  #Needs modification to support multinode
+    config.config['data_loader']['args']['num_workers']//=config['n_gpu'] #Needs modification to support multinode
     data_loader_obj = config.init_obj('data_loader', module_data)
     data_loader = data_loader_obj.get_train_loader()
     valid_data_loader = data_loader_obj.get_valid_loader()
@@ -49,9 +50,6 @@ def main_worker(gpu,config):
     # prepare for (multi-device) GPU training
     torch.cuda.set_device(gpu)
     model.cuda(gpu)
-    config.config['data_loader']['args']['batch_size']//=config['n_gpu']  #Needs modification to support multinode
-    config.config['data_loader']['args']['num_workers']//=config['n_gpu'] #Needs modification to support multinode
-    device, device_ids = prepare_device(config['n_gpu'])
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu],find_unused_parameters=True)
     if gpu==0:
         logger.info(config['name'])

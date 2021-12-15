@@ -68,7 +68,7 @@ def get_logger(name=None,log_dir='saved/',test=False,verbosity=2):
             config = read_json(log_config)
             for _, handler in config['handlers'].items():
                 if 'filename' in handler:
-                    handler['filename'] = str(log_dir / handler['filename'])
+                    handler['filename'] = str(Path(log_dir) / handler['filename'])
             logging.config.dictConfig(config)
         else:
             print("Warning: logging configuration file is not found in {}.".format(log_config))
