@@ -19,7 +19,7 @@ def main(model_path,config):
     checkpoint = torch.load(model_path,map_location='cpu')
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
-    data=torch.randn(1,3, 224, 224)
+    data=torch.randn([1]+config['input_size'])
     device = torch.device('cpu') #'cuda' if torch.cuda.is_available() else 
     model = model.to(device)
     model.eval()
