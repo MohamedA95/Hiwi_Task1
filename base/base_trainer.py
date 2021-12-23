@@ -103,10 +103,10 @@ class BaseTrainer:
                     best = True
                 else:
                     not_improved_count += 1
-                    self.logger.info("Validation performance did\'t improve for epoch#: {}".format(epoch))
+                    self.logger.info("Monitor metric did\'t improve for epoch#: {}".format(epoch))
 
                 if not_improved_count > self.early_stop:
-                    self.logger.info("Validation performance didn\'t improve for {} epochs. "
+                    self.logger.info("Monitor metric didn\'t improve for {} epochs. "
                                      "Training stops.".format(self.early_stop))
                     if dist.is_initialized():
                         dist.destroy_process_group()

@@ -41,19 +41,22 @@ class QuantLeNet(Module):
     def __init__(self, bit_width=8):
         super(QuantLeNet, self).__init__()
         self.features = nn.Sequential(
-            make_quant_conv2d(3, 32, 3,bit_width,bias=True),
-            make_quant_relu(bit_width=bit_width),
+            make_quant_conv2d(3, 32, 3,bit_width,bias=True,return_quant_tensor=False),
+            nn.BatchNorm2d(32),
+            make_quant_relu(bit_width=bit_width,input_quant=ACT_QUANTIZER),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True),
-            make_quant_conv2d(32, 64, 3,bit_width,bias=True,input_quant=None),
-            make_quant_relu(bit_width=bit_width),
-            qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True))
+            make_quant_conv2d(32, 64, 3,bit_width,bias=True,input_quant=None,return_quant_tensor=False),
+            nn.BatchNorm2d(64),
+            make_quant_relu(bit_width=bit_width,input_quant=ACT_QUANTIZER),
+            qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True)
+            )
         self.classifier = nn.Sequential(
             make_quant_linear(in_channels=64*6*6,out_channels=120,bit_width=bit_width,bias=True),
-            make_quant_relu(bit_width=bit_width),
+            make_quant_relu(bit_width=bit_width,input_quant=None),
             make_quant_linear(in_channels=120,out_channels=84,bit_width=bit_width,bias=True),
-            make_quant_relu(bit_width=bit_width),
+            make_quant_relu(bit_width=bit_width,input_quant=None),
             make_quant_linear(in_channels=84,out_channels=10,bit_width=bit_width,bias=True,return_quant_tensor=False))
-        self.features[1].cache_inference_quant_bias = True
+        self.features[0].cache_inference_quant_bias = True
         self.features[4].cache_inference_quant_bias = True
         self.classifier[0].cache_inference_quant_bias = True
         self.classifier[2].cache_inference_quant_bias = True
@@ -159,6 +162,7 @@ def make_quant_linear(in_channels,
 
 def make_quant_relu(bit_width,
                     quant_type=QUANT_TYPE,
+                    input_quant=ACT_QUANTIZER,
                     scaling_impl_type=ACT_SCALING_IMPL_TYPE,
                     scaling_per_channel=ACT_SCALING_PER_CHANNEL,
                     restrict_scaling_type=ACT_SCALING_RESTRICT_SCALING_TYPE,
@@ -167,6 +171,8 @@ def make_quant_relu(bit_width,
                     return_quant_tensor=ACT_RETURN_QUANT_TENSOR,
                     per_channel_broadcastable_shape=ACT_PER_CHANNEL_BROADCASTABLE_SHAPE):
     return qnn.QuantReLU(bit_width=bit_width,
+                         input_quant=input_quant,
+                         input_bit_width=bit_width,
                          quant_type=quant_type,
                          scaling_impl_type=scaling_impl_type,
                          scaling_per_channel=scaling_per_channel,
