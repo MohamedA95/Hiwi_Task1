@@ -23,30 +23,26 @@ ACT_QUANTIZER = Int8ActPerTensorFixedPoint
 ACT_PER_CHANNEL_BROADCASTABLE_SHAPE = None
 
 WEIGHT_SCALING_IMPL_TYPE = ScalingImplType.STATS
-WEIGHT_SCALING_PER_OUTPUT_CHANNEL = True # custom 200 epoch
+WEIGHT_SCALING_PER_OUTPUT_CHANNEL = False # custom 200 epoch
 WEIGHT_SCALING_STATS_OP = StatsOp.MAX
 WEIGHT_QUANTIZER = Int8WeightPerTensorFixedPoint
 WEIGHT_RESTRICT_SCALING_TYPE = RestrictValueType.LOG_FP
 WEIGHT_NARROW_RANGE = False # custom 200 epoch
 
-INPUT_SCALING_PER_OUTPUT_CHANNEL = True
-
 ACT_RETURN_QUANT_TENSOR = True 
 CONV_RETURN_QUANT_TENSOR = True
 LINEAR_RETURN_QUANT_TENSOR = True
 ENABLE_BIAS_QUANT = True # enable bias quantization, default: False
-BIAS_QUANTIZER = Int8Bias
+BIAS_QUANTIZER = Int8BiasPerTensorFixedPointInternalScaling
 
 class QuantLeNet(Module):
-    def __init__(self, bit_width=8):
+    def __init__(self, bit_width=8,batchnorm=False):
         super(QuantLeNet, self).__init__()
         self.features = nn.Sequential(
-            make_quant_conv2d(3, 32, 3,bit_width,bias=True,return_quant_tensor=False),
-            nn.BatchNorm2d(32),
+            *make_quant_conv2d(3, 32, 3,bit_width,bias=True,return_quant_tensor=False,batchnorm=batchnorm),
             make_quant_relu(bit_width=bit_width,input_quant=ACT_QUANTIZER),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True),
-            make_quant_conv2d(32, 64, 3,bit_width,bias=True,input_quant=None,return_quant_tensor=False),
-            nn.BatchNorm2d(64),
+            *make_quant_conv2d(32, 64, 3,bit_width,bias=True,input_quant=None,return_quant_tensor=False,batchnorm=batchnorm),
             make_quant_relu(bit_width=bit_width,input_quant=ACT_QUANTIZER),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True)
             )
@@ -77,13 +73,13 @@ def make_quant_conv2d(in_channels,
                       padding=0,
                       groups=1,
                       bias=True,
+                      batchnorm=False,
                       weight_quant=WEIGHT_QUANTIZER,
                       bias_quant=BIAS_QUANTIZER,
                       input_quant=ACT_QUANTIZER,
                       return_quant_tensor=CONV_RETURN_QUANT_TENSOR, #Custom
                       enable_bias_quant=ENABLE_BIAS_QUANT,
                       weight_quant_type=QUANT_TYPE,
-                      input_scaling_per_output_channel=INPUT_SCALING_PER_OUTPUT_CHANNEL,
                       weight_scaling_impl_type=WEIGHT_SCALING_IMPL_TYPE,
                       weight_scaling_stats_op=WEIGHT_SCALING_STATS_OP,
                       weight_scaling_per_output_channel=WEIGHT_SCALING_PER_OUTPUT_CHANNEL,
@@ -91,7 +87,7 @@ def make_quant_conv2d(in_channels,
                       weight_narrow_range=WEIGHT_NARROW_RANGE,
                       weight_scaling_min_val=SCALING_MIN_VAL):
     bias_quant_type = QUANT_TYPE if enable_bias_quant else QuantType.FP
-    return qnn.QuantConv2d(in_channels,
+    layers=[qnn.QuantConv2d(in_channels,
                            out_channels,
                            groups=groups,
                            kernel_size=kernel_size,
@@ -105,9 +101,6 @@ def make_quant_conv2d(in_channels,
                            return_quant_tensor=return_quant_tensor,
                            output_quant=ACT_QUANTIZER,
                            output_bit_width=bit_width,
-                        #    input_scaling_per_output_channel=input_scaling_per_output_channel,
-                        #    input_scaling_stats_permute_dims=(1, 0, 2), # permute dims to put channels first during stats collection phase
-                        #    input_per_channel_broadcastable_shape=(1, CHANNELS, 1), # shape of the learned parameter
                            bias_quant_type=bias_quant_type,
                            compute_output_bit_width=bias and enable_bias_quant,
                            compute_output_scale=bias and enable_bias_quant,
@@ -118,9 +111,11 @@ def make_quant_conv2d(in_channels,
                            weight_scaling_per_output_channel=weight_scaling_per_output_channel,
                            weight_restrict_scaling_type=weight_restrict_scaling_type,
                            weight_narrow_range=weight_narrow_range,
-                           weight_scaling_min_val=weight_scaling_min_val
-                           )
-
+                           weight_scaling_min_val=weight_scaling_min_val)]
+                           
+    if(batchnorm):
+        layers.append(nn.BatchNorm2d(out_channels))
+    return layers
 
 def make_quant_linear(in_channels,
                       out_channels,

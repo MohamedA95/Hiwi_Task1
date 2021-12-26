@@ -15,6 +15,7 @@ python test.py --resume path_to_model.pth
 ```bash
 python parameters_extractor.py --model path_to_model.pth
 ```
+To fuse `BatchNorm2d` into the preceding `Conv2d`, add `-f` option to the previous command. 
 
 ## How to seprate the weights?
 In this template the weights are saved together with config & other objects in the `pth` file, it can be seprated using the following command.
@@ -24,7 +25,7 @@ python checkpoint_separator.py --model path_to_model.pth
 The resulting weights file will be saved next to the model.
 
 ## How to create config.json?
-config.json is a json file that descrips the expermit to run, sevral examples are avalibe under config_json.
+config.json is a json file that descrips the experiment to run, sevral examples are avalibe under config_json.
 ### **Keys dictionary**
 
 #### **arch**
@@ -125,7 +126,7 @@ to do
 
 
 #### **metrics**
-Metrics used to evaluate the model, currently defined metrics are `accuracy` & `top_k_acc`. New metrics can be defined under `model/metric.py`.
+Metrics used to evaluate the model, currently defined metrics are `accuracy` & `top_k_acc`. Default value for `k` in `top_k_acc` is 5. New metrics can be defined under `model/metric.py`.
 
 #### **lr_scheduler**
 Example of StepLR
@@ -190,8 +191,6 @@ Configrations to be used in the resulting config.h file
 }
 ```
 ## To Do
--No need to create a new folder when resuming traning\
 -Generic model initialization from PyTorch\
--Resume from checkpoint in DDP is not tested
  ## Notes
- -If you get NCCL error run again with $ export NCCL_DEBUG=WARN
+ -If you get NCCL error rerun with `export NCCL_DEBUG=WARN`

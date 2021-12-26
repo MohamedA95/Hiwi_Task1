@@ -32,7 +32,7 @@ def main(config):
     # prepare model for testing
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-    summary(model,input_size=(config['data_loader']['args']['batch_size'], 3, 224, 224))
+    summary(model,input_size=[config['data_loader']['args']['batch_size']]+ config['input_size'])
     model.eval()
 
     total_loss = 0.0

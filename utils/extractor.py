@@ -1,6 +1,7 @@
 import torch
 import pathlib
 import brevitas
+from brevitas.nn.utils import merge_bn
 from model.quant_vgg import QuantVGG
 from pathlib import Path
 from tqdm import tqdm
@@ -83,7 +84,7 @@ def fullyconn_parser(layer,file):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_WMEM"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
 
 
-def parameters_extractor(model,ext_config,result_path=""):
+def parameters_extractor(model,ext_config,result_path="",fuse=False):
     """
     Extracts layers properites, weight & bias and writes the result to .h file  with the model name
     under the same path, 
@@ -107,19 +108,31 @@ def parameters_extractor(model,ext_config,result_path=""):
         file_object.write("{:<48}{}\n\n\n".format("#define SEQUENCE_LENGTH",ext_config['SEQUENCE_LENGTH']))
 
         # Extract Features layers Data
-        for i in tqdm(model.features,desc='Extracting features parameters'):
-            if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
-                quant_conv2d_parser(i, file_object,ext_config)
-                pre_layer="CONV2D_{}_".format(conv2d_counter)
-                conv2d_counter += 1
-            elif isinstance(i,torch.nn.modules.pooling.MaxPool2d):
-                maxpool2d_parser(i, file_object,ext_config)
-                pre_layer="MAXPOOL2D_{}_".format(maxpool2d_counter)
-                maxpool2d_counter += 1
-            elif isinstance(i,brevitas.nn.quant_activation.QuantReLU):
-                quantReLU_parser(i,file_object,ext_config)
-                pre_layer="RELU_{}_".format(quantrelue_counter)
-                quantrelue_counter+=1
+        features_iter=model.features.children()
+        with tqdm(total=len(model.features),desc='Extracting features parameters') as pbar:
+            i=next(features_iter,None)
+            while i != None:
+                if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
+                    if fuse:
+                        bn=next(features_iter)
+                        merge_bn(i,bn)
+                        pbar.update()
+                        print("Fusing BatchNorm2d with Conv2d layer:{}".format(conv2d_counter))
+                    quant_conv2d_parser(i, file_object,ext_config)
+                    pre_layer="CONV2D_{}_".format(conv2d_counter)
+                    conv2d_counter += 1
+                elif isinstance(i,torch.nn.modules.pooling.MaxPool2d):
+                    maxpool2d_parser(i, file_object,ext_config)
+                    pre_layer="MAXPOOL2D_{}_".format(maxpool2d_counter)
+                    maxpool2d_counter += 1
+                elif isinstance(i,brevitas.nn.quant_activation.QuantReLU):
+                    quantReLU_parser(i,file_object,ext_config)
+                    pre_layer="RELU_{}_".format(quantrelue_counter)
+                    quantrelue_counter+=1
+                else:
+                    print("Faced an Unknown layer:\n",type(i))
+                i=next(features_iter,None)
+                pbar.update()
         # Extract classifier layers Data
         for i in tqdm(model.classifier,desc='Extracting classifer parameters'):
             if isinstance(i,brevitas.nn.QuantLinear):

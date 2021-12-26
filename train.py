@@ -26,8 +26,9 @@ def main(config):
     logger = get_logger(name=__name__,log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
 
     # setup data_loader instances
-    data_loader = config.init_obj('data_loader', module_data)
-    valid_data_loader = data_loader.split_validation()
+    data_loader_obj = config.init_obj('data_loader', module_data)
+    data_loader = data_loader_obj.get_train_loader()
+    valid_data_loader = data_loader_obj.get_valid_loader()
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
