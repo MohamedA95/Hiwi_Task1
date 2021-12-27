@@ -24,9 +24,12 @@ def main(config):
     metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
     logger.info('Loading checkpoint: {} ...'.format(config.resume))
-    checkpoint = torch.load(config.resume)
+    if not torch.cuda.is_available():
+        checkpoint = torch.load(config.resume,map_location=torch.device('cpu'))
+    else:
+        checkpoint = torch.load(config.resume)
     state_dict = checkpoint['state_dict']
-    torch.nn.modules.utils.consume_prefix_in_state_dict_if_present(state_dict,"module.")
+    # torch.nn.modules.utils.consume_prefix_in_state_dict_if_present(state_dict,"module.")
     model.load_state_dict(state_dict)
 
     # prepare model for testing

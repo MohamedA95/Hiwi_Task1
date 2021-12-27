@@ -35,8 +35,7 @@ def main(config):
     # prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
     model = model.to(device)
-    logger.info(config['name'])
-    summary(model,input_size=[config['data_loader']['args']['batch_size']]+config['input_size'])
+    logger.info(summary(model,input_size=[config['data_loader']['args']['batch_size']]+config['input_size'],verbose=0))
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
