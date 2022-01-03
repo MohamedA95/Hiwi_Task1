@@ -144,7 +144,7 @@ def make_layers(cfg, batch_norm, bit_width):
     return nn.Sequential(*layers)
 
 def print_config(logger):
-    logger.info("Brevitas version: ", brevitas.__version__)
-    logger.info("BIAS_QUANTIZER: ",BIAS_QUANTIZER)
-    logger.info("WEIGHT_QUANTIZER: ",WEIGHT_QUANTIZER)
-    logger.info("ACT_QUANTIZER: ",ACT_QUANTIZER)
+    logger.info("Brevitas version: {}".format(brevitas.__version__))
+    logger.info("BIAS_QUANTIZER: {}".format(BIAS_QUANTIZER))
+    logger.info("WEIGHT_QUANTIZER: {}".format(WEIGHT_QUANTIZER))
+    logger.info("ACT_QUANTIZER: {}".format(ACT_QUANTIZER))
