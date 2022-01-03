@@ -158,7 +158,7 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
             str_format='{:0x},\n'
         for i in tqdm(conv_layer_list,desc='Extracting conv layers weight & bias'):
             if FINN_STRUCTURES:
-                file_object.write("static FixedPointWeights<CONV2D_{0}_SIMD, conv2d_{0}_weight_dtype,CONV2D_{0}_PE,CONV2D_{0}_WMEM> conv2d_{0}_weights_fp =\n".format(conv2d_counter))
+                file_object.write("static FixedPointWeights<CONV2D_{0}_SIMD, conv2d_{0}_weight_dtype,CONV2D_{0}_PE,CONV2D_{0}_WMEM> conv2d_{0}_weights =\n".format(conv2d_counter))
             else:
                 file_object.write("static ap_uint<CONV2D_{0}_WEIGHT_BITS> conv2d_{0}_weight [CONV2D_{0}_PE] [CONV2D_{0}_SIMD] [CONV2D_{0}_WMEM] =\n".format(conv2d_counter))
             file_object.write("{{{\n")
@@ -171,7 +171,7 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
 
             if i.is_bias_quant_enabled:
                 if FINN_STRUCTURES:
-                    file_object.write("static BiasActivation<CONV2D_{0}_BMEM,CONV2D_{0}_PE, conv2d_{0}_activation_dtype,conv2d_{0}_bias_dtype> conv2d_{0}_bias_activation =\n".format(conv2d_counter))
+                    file_object.write("static BiasActivation<CONV2D_{0}_BMEM,CONV2D_{0}_PE, conv2d_{0}_activation_dtype,conv2d_{0}_bias_dtype> conv2d_{0}_bias =\n".format(conv2d_counter))
                 else:
                     file_object.write("static ap_uint<CONV2D_{0}_BIAS_BITS> conv2d_{0}_bias [CONV2D_{0}_PE][CONV2D_{0}_BMEM] =\n".format(conv2d_counter))
                 file_object.write("{{\n")
@@ -185,7 +185,7 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
         for i in tqdm(model.classifier,desc='Extracting linear layers weight & bias'):
             if isinstance(i,brevitas.nn.quant_linear.QuantLinear):
                 if FINN_STRUCTURES:
-                    file_object.write("static FixedPointWeights<FC_{0}_SIMD, fc_{0}_weight_dtype,FC_{0}_PE,FC_{0}_WMEM> conv2d_{0}_weights_fp =\n".format(conv2d_counter))
+                    file_object.write("static FixedPointWeights<FC_{0}_SIMD, fc_{0}_weight_dtype,FC_{0}_PE,FC_{0}_WMEM> fc_{0}_weights =\n".format(fullyconn_counter))
                 else:
                     file_object.write("static ap_uint<FC_{0}_WEIGHT_BITS> fc_{0}_weight [FC_{0}_PE] [FC_{0}_SIMD] [FC_{0}_WMEM] =\n".format(fullyconn_counter))
                 file_object.write("{{{\n")
@@ -196,7 +196,7 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
 
                 if i.is_bias_quant_enabled:
                     if FINN_STRUCTURES:
-                        file_object.write("static BiasActivation<FC_{0}_BMEM,FC_{0}_PE, fc_{0}_activation_dtype,fc_{0}_bias_dtype> fc_{0}_bias_activation =\n".format(fullyconn_counter))
+                        file_object.write("static BiasActivation<FC_{0}_BMEM,FC_{0}_PE, fc_{0}_activation_dtype,fc_{0}_bias_dtype> fc_{0}_bias =\n".format(fullyconn_counter))
                     else:
                         file_object.write("static ap_uint<FC_{0}_BIAS_BITS> fc_{0}_bias [FC_{0}_PE][FC_{0}_BMEM] =".format(fullyconn_counter))
                     file_object.write("{{\n")
