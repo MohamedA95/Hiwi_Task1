@@ -6,7 +6,6 @@ from base import BaseModel
 class LeNet(BaseModel):
     def __init__(self,batchnorm=False):
         super(LeNet, self).__init__()
-        print(batchnorm)
         self.features = nn.Sequential(
             *make_conv2d(3,32,batchnorm,3),
             nn.ReLU(),
