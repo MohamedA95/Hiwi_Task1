@@ -5,6 +5,12 @@ Based on https://github.com/victoresque/pytorch-template
 ```bash
 python train.py -c path_to_config.json
 ```
+If `'n_gpu'` in config.json is more than 1 the model will be wrapped with `torch.nn.DataParallel()`
+## How to train using DDP?
+```bash
+python train_ddp.py --resume path_to_model.pth
+```
+In addition to using `train_ddp.py`, `dist_backend` & `dist_url` options must be defined in config.json
 
 ## How to test a model?
 ```bash
@@ -25,9 +31,17 @@ python checkpoint_separator.py --model path_to_model.pth
 The resulting weights file will be saved next to the model.
 
 ## How to create config.json?
-config.json is a json file that descrips the experiment to run, sevral examples are avalibe under config_json.
+Config.json is a json file that descrips the experiment to run, sevral examples are avalibe under config_json.
 ### **Keys dictionary**
 
+#### **name**
+Name of the experment, a timestamp will be appended to it using `'_%d_%m_%H%M%S'` as format. This can be modified in `parse_config.json` 
+#### **n_gpu**
+Total number of gpus to use. If set to `-1` it will use all the available gpus
+#### **dist_backend** 
+Distributed backend to use. For more info check [relative PyTorch docs](https://pytorch.org/docs/stable/distributed.html#torch.distributed.init_process_group).
+#### **dist_url**
+URL specifying how to initialize the process group. For more info check [relative PyTorch docs](https://pytorch.org/docs/stable/distributed.html#torch.distributed.init_process_group).
 #### **arch**
 The architecure can be defined using this key. The value should be a dictionary with two parameters `type` & `args`. Types can be `{VGG_net,QuantVGG_pure,vgg16,alexnet}`.\
 `VGG_net`: Local implementation of VGG.\
