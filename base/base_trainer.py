@@ -31,8 +31,7 @@ class BaseTrainer:
         self.train_sampler=train_sampler
 
         # configuration to monitor model performance and save best
-        if not is_master or self.monitor == 'off':
-            self.logger.info("From inside monitor control Rank {}".format(dist.get_rank()))
+        if not is_master() or self.monitor == 'off':
             self.mnt_mode = 'off'
             self.mnt_best = 0
         else:
@@ -117,6 +116,7 @@ class BaseTrainer:
                 if best:
                     self._save_best(state)
             if dist.is_initialized():
+                self.logger.debug("Barrier after saving")
                 dist.barrier()
             
 
