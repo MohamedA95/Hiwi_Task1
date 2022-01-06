@@ -37,17 +37,18 @@ def main(config):
     # prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
     model = model.to(device)
-    logger.info(summary(model,input_size=[config['data_loader']['args']['batch_size']]+config['input_size'],verbose=0))
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
-
+    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+    logger.info(summary(model,input_size=[config['data_loader']['args']['batch_size']]+config['input_size'],verbose=0))
+    logger.info('Trainable parameters: {}'.format(sum([p.numel() for p in trainable_params])))
+    
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+    optimizer = config.init_obj('optimizer', torch.optim, model.parameters())
     lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
     trainer = Trainer(model, criterion, metrics, optimizer,
