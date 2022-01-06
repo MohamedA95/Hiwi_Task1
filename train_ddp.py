@@ -54,7 +54,7 @@ def main_worker(gpu,config):
     if gpu==0:
         logger.info(config['name'])
         trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-        summary(model,input_size=(config['data_loader']['args']['batch_size'], 3, 224, 224))
+        logger.info(summary(model,input_size=[config['data_loader']['args']['batch_size']]+config['input_size'],verbose=0))
         logger.info('Trainable parameters: {}'.format(sum([p.numel() for p in trainable_params])))
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
