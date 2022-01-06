@@ -74,7 +74,7 @@ class CIFAR_data_loader():
 # Based on https://github.com/pytorch/examples/blob/master/imagenet/main.py
 
 
-class ImageNet_data_loader(BaseDataLoader):
+class ImageNet_data_loader():
     """
         ImageNet data loader
 
@@ -82,64 +82,13 @@ class ImageNet_data_loader(BaseDataLoader):
         data_dir (str): Directory where data set is saved, should have 
                         three folders train, val & test
         batch_size (int): Batch size
-        shuffle (bool):
+        shuffle (bool): Automatically set to False if DDP is used
         num_workers (int): Number of workers
         pin_memory (bool): 
-        training (bool):
+        training (bool): True to use train dataset False to use test dataset
     """
 
-    val_loader = None
-
-    def __init__(self, data_dir, batch_size, shuffle=True, num_workers=0, pin_memory=True, training=True):
-        normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        if training:
-            global val_loader
-            traindir = os.path.join(data_dir, 'train')
-            valdir = os.path.join(data_dir, 'val')
-            train_dataset = datasets.ImageFolder(traindir, transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalize,
-            ]))
-            val_dataset = datasets.ImageFolder(valdir, transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                normalize,
-            ]))
-            val_loader = torch.utils.data.DataLoader(
-                val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
-            super().__init__(train_dataset, batch_size, shuffle, 0.0, num_workers)
-        else:
-            testdir = os.path.join(data_dir, 'test')
-            test_dataset = datasets.ImageFolder(testdir, transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                normalize,
-            ]))
-            super().__init__(test_dataset, batch_size, shuffle, 0.0, num_workers)
-
-    def split_validation(self):
-        return val_loader
-
-class dist_ImageNet_data_loader():
-    """
-        ImageNet data loader
-
-        Args:
-        data_dir (str): Directory where data set is saved, should have 
-                        three folders train, val & test
-        batch_size (int): Batch size
-        shuffle (bool):
-        num_workers (int): Number of workers
-        pin_memory (bool): 
-        training (bool):
-    """
-
-    def __init__(self, data_dir, batch_size, num_workers=0, pin_memory=True, training=True):
+    def __init__(self, data_dir, batch_size,shuffle=False, num_workers=4, pin_memory=True, training=True):
         normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         if training:
@@ -157,8 +106,8 @@ class dist_ImageNet_data_loader():
                 transforms.ToTensor(),
                 normalize,
             ]))
-            self.train_sampler = DistributedSampler(train_set)
-            self.train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=False, sampler=self.train_sampler, num_workers=num_workers, pin_memory=pin_memory)
+            self.train_sampler = DistributedSampler(train_set,num_replicas=dist.get_world_size()) if dist.is_initialized() else None
+            self.train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=(shuffle if self.train_sampler is None else False), sampler=self.train_sampler, num_workers=num_workers, pin_memory=pin_memory)
             self.valid_loader = DataLoader(valid_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
 
         else:
