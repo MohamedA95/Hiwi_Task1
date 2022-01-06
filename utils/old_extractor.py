@@ -6,13 +6,11 @@ from model.quant_vgg import QuantVGG
 from pathlib import Path
 from tqdm import tqdm
 
-FINN_STRUCTURES=False
 conv2d_counter = 0
 maxpool2d_counter = 0
 quantrelue_counter = 0
 fullyconn_counter=0
 pre_layer=None
-
 def quant_conv2d_parser(layer, file,ext_config):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_K"), layer.kernel_size[0]))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_IFM_CH"), layer.in_channels))
@@ -23,9 +21,9 @@ def quant_conv2d_parser(layer, file,ext_config):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_PE"), ext_config['PE']))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_SIMD"), ext_config['SIMD']))
     if layer.is_bias_quant_enabled:
-        file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_BITS"), int(layer.quant_bias_bit_width())))
+        file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_BITS"), layer.quant_bias_bit_width() if layer.quant_bias_bit_width() is not None else "0"))
         file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BIAS_INT_BITS"), int(layer.quant_bias_bit_width()+torch.log2(layer.quant_bias_scale()))))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WEIGHT_BITS"), int(layer.quant_weight_bit_width())))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WEIGHT_BITS"), layer.quant_weight_bit_width()))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WEIGHT_INT_BITS"), int(layer.quant_weight_bit_width()+torch.log2(layer.quant_weight_scale()))))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_IA_BITS"), "{}OA_BITS".format(pre_layer) if conv2d_counter > 0 else str(ext_config['IA_BITS']) ))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_IA_INT_BITS"), "{}OA_INT_BITS".format(pre_layer) if conv2d_counter > 0 else str(ext_config['IA_INT_BITS']) ))
@@ -64,30 +62,29 @@ def quantReLU_parser(layer, file,ext_config):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define RELU_", quantrelue_counter, "_OA_BITS"), int(layer.quant_output_bit_width())))
     file.write("{:<48}{}\n\n".format("{:s}{:d}{:s}".format("#define RELU_", quantrelue_counter, "_OA_INT_BITS"), int(layer.quant_output_bit_width()+torch.log2(layer.quant_output_scale()))))
 
-def fullyconn_parser(layer,file,ext_config):
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IFM_CH"), "{}OFM_CH".format(pre_layer)))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IFM_DIM"), "1" if fullyconn_counter > 0 else "{}OFM_DIM".format(pre_layer)))
+def fullyconn_parser(layer,file):
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IFM_CH"), "({}OFM_CH)".format(pre_layer)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IFM_DIM"), "1" if fullyconn_counter > 0 else "({}OFM_DIM".format(pre_layer)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IA_BITS"), "{}OA_BITS".format(pre_layer)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_IA_INT_BITS"), "{}OA_INT_BITS".format(pre_layer)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_OFM_CH"), layer.out_channels))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_PE"), ext_config['PE']))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_SIMD"), ext_config['SIMD']))
-    if layer.is_bias_quant_enabled:
-        file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_BIAS_BITS"), int(layer.quant_bias_bit_width())))
-        file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_BIAS_INT_BITS"), int(layer.quant_bias_bit_width()+torch.log2(layer.quant_bias_scale()))))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_WEIGHT_BITS"), int(layer.quant_weight_bit_width())))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_WEIGHT_INT_BITS"), int(layer.quant_weight_bit_width()+torch.log2(layer.quant_weight_scale()))))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_MUL_BITS"), ext_config['MUL_BITS']))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_MUL_INT_BITS"), ext_config['MUL_INT_BITS']))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_ACC_BITS"), ext_config['ACC_BITS']))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_ACC_INT_BITS"), ext_config['ACC_INT_BITS']))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_OA_BITS"), int(layer.quant_output_bit_width())))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_OA_INT_BITS"), int(layer.quant_output_bit_width()+torch.log2(layer.quant_output_scale()))))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_BMEM"), "(FC_{0}_OFM_CH / FC_{0}_PE)".format(fullyconn_counter)))
-    file.write("{:<48}{}\n\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_WMEM"), "((FC_{0}_IFM_DIM * FC_{0}_IFM_CH * FC_{0}_OFM_CH) / (FC_{0}_PE * FC_{0}_SIMD))".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_PE"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_SIMD"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_BIAS_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_BIAS_INT_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_WEIGHT_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_WEIGHT_INT_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_MUL_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_MUL_INT_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_ACC_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_ACC_INT_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_OA_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_OA_INT_BITS"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_BMEM"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define FC_", fullyconn_counter, "_WMEM"), "CONV2D_{}_OFM_CH".format(fullyconn_counter)))
 
 
-def parameters_extractor(model,ext_config,result_path="",fuse=False):
+def parameters_extractor_old(model,ext_config,result_path="",fuse=False):
     """
     Extracts layers properites, weight & bias and writes the result to .h file  with the model name
     under the same path, 
@@ -112,7 +109,6 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
 
         # Extract Features layers Data
         features_iter=model.features.children()
-        conv_layer_list=[]
         with tqdm(total=len(model.features),desc='Extracting features parameters') as pbar:
             i=next(features_iter,None)
             while i != None:
@@ -123,7 +119,6 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
                         pbar.update()
                         print("Fusing BatchNorm2d with Conv2d layer:{}".format(conv2d_counter))
                     quant_conv2d_parser(i, file_object,ext_config)
-                    conv_layer_list.append(i)
                     pre_layer="CONV2D_{}_".format(conv2d_counter)
                     conv2d_counter += 1
                 elif isinstance(i,torch.nn.modules.pooling.MaxPool2d):
@@ -138,73 +133,62 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
                     print("Faced an Unknown layer:\n",type(i))
                 i=next(features_iter,None)
                 pbar.update()
-
         # Extract classifier layers Data
         for i in tqdm(model.classifier,desc='Extracting classifer parameters'):
             if isinstance(i,brevitas.nn.QuantLinear):
-                fullyconn_parser(i, file_object,ext_config)
+                fullyconn_parser(i, file_object)
                 pre_layer="FC_{}_".format(fullyconn_counter)
                 fullyconn_counter += 1
             elif isinstance(i,brevitas.nn.quant_activation.QuantReLU):
                 quantReLU_parser(i,file_object,ext_config)
                 pre_layer="RELU_{}_".format(quantrelue_counter)
                 quantrelue_counter+=1
-
         # Extract Conv layers Weight & Bias   
         conv2d_counter=0
-        if FINN_STRUCTURES:
-            str_format='"{:#0x}", '
-        else:
-            str_format='{:0x},\n'
-        for i in tqdm(conv_layer_list,desc='Extracting conv layers weight & bias'):
-            if FINN_STRUCTURES:
-                file_object.write("static FixedPointWeights<CONV2D_{0}_SIMD, conv2d_{0}_weight_dtype,CONV2D_{0}_PE,CONV2D_{0}_WMEM> conv2d_{0}_weights =\n".format(conv2d_counter))
-            else:
+        for i in tqdm(model.features,desc='Extracting features weight & bias'):
+            if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                 file_object.write("static ap_uint<CONV2D_{0}_WEIGHT_BITS> conv2d_{0}_weight [CONV2D_{0}_PE] [CONV2D_{0}_SIMD] [CONV2D_{0}_WMEM] =\n".format(conv2d_counter))
-            file_object.write("{{{\n")
-            for j in i.int_weight():
-                for k in j:
-                    for r in k:
-                        for m in r: 
-                            file_object.write((str_format).format(m))
-            file_object.write("}}};\n")
-
-            if i.is_bias_quant_enabled:
-                if FINN_STRUCTURES:
-                    file_object.write("static BiasActivation<CONV2D_{0}_BMEM,CONV2D_{0}_PE, conv2d_{0}_activation_dtype,conv2d_{0}_bias_dtype> conv2d_{0}_bias =\n".format(conv2d_counter))
-                else:
-                    file_object.write("static ap_uint<CONV2D_{0}_BIAS_BITS> conv2d_{0}_bias [CONV2D_{0}_PE][CONV2D_{0}_BMEM] =\n".format(conv2d_counter))
-                file_object.write("{{\n")
-                for j in i.int_bias():
-                    file_object.write((str_format).format(j))
-                file_object.write("}};\n")
-            conv2d_counter += 1
-
-        # Extract linear layers Weight & Bias
-        fullyconn_counter=0
-        for i in tqdm(model.classifier,desc='Extracting linear layers weight & bias'):
-            if isinstance(i,brevitas.nn.quant_linear.QuantLinear):
-                if FINN_STRUCTURES:
-                    file_object.write("static FixedPointWeights<FC_{0}_SIMD, fc_{0}_weight_dtype,FC_{0}_PE,FC_{0}_WMEM> fc_{0}_weights =\n".format(fullyconn_counter))
-                else:
-                    file_object.write("static ap_uint<FC_{0}_WEIGHT_BITS> fc_{0}_weight [FC_{0}_PE] [FC_{0}_SIMD] [FC_{0}_WMEM] =\n".format(fullyconn_counter))
-                file_object.write("{{{\n")
-                for row in i.int_weight():
-                    for val in row:
-                        file_object.write((str_format).format(val))
-                file_object.write("\n}}};\n")
+                file_object.write("{\n")
+                for j in i.int_weight():
+                    file_object.write("{\n")
+                    for k in j:
+                        file_object.write("{\n")
+                        for r in k:
+                            file_object.write("{")
+                            for m in r[0:-1]: 
+                                file_object.write(("{:0x}, ").format(m))
+                            file_object.write(("{:0x}}},\n").format(r[-1]))
+                        file_object.write("};\n")
+                    file_object.write("};\n")
+                file_object.write("};\n")
 
                 if i.is_bias_quant_enabled:
-                    if FINN_STRUCTURES:
-                        file_object.write("static BiasActivation<FC_{0}_BMEM,FC_{0}_PE, fc_{0}_activation_dtype,fc_{0}_bias_dtype> fc_{0}_bias =\n".format(fullyconn_counter))
-                    else:
-                        file_object.write("static ap_uint<FC_{0}_BIAS_BITS> fc_{0}_bias [FC_{0}_PE][FC_{0}_BMEM] =".format(fullyconn_counter))
-                    file_object.write("{{\n")
-                    for val in i.int_bias():
-                        file_object.write((str_format).format(val))
-                    file_object.write("\n}};\n")
+                    file_object.write("static ap_uint<CONV2D_{0}_BIAS_BITS> conv2d_{0}_bias [CONV2D_{0}_PE][CONV2D_{0}_BMEM] =\n".format(conv2d_counter))
+                    file_object.write("{\n{\n")
+                    for j in i.int_bias()[0:-1]:
+                        file_object.write(("{:0x},\n").format(j))
+                    file_object.write(("{:0x}\n").format(i.int_bias()[-1]))
+                    file_object.write("}\n};\n")
+                conv2d_counter += 1
+
+        # Extract Fully Connected layers Weight & Bias
+        fullyconn_counter=0
+        for i in tqdm(model.classifier,desc='Extracting classifier weight & bias'):
+            if isinstance(i,brevitas.nn.quant_linear.QuantLinear):
+                file_object.write("FullyConnected_{}_WEIGHT\n".format(fullyconn_counter))
+                file_object.write("{\n")
+                for row in i.int_weight():
+                    file_object.write("{")
+                    for val in row[0:-1]:
+                        file_object.write(("{:0x}, ").format(val))
+                    file_object.write(("{:0x}}};\n").format(row[-1]))
+                file_object.write("\n")
+                if i.is_bias_quant_enabled:
+                    file_object.write("FullyConnected_{}_BIAS\n{{\n".format(fullyconn_counter))
+                    for val in i.int_bias()[0:-1]:
+                        file_object.write(("{:0x}, ").format(val))
+                    file_object.write(("{:0x}}}\n").format(i.int_bias()[-1]))
+                    file_object.write(";\n")
                 fullyconn_counter += 1
-        
-        file_object.write("#endif")
         res_path=file_object.name
     return res_path
