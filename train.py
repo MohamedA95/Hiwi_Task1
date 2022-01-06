@@ -14,17 +14,19 @@ from trainer import Trainer
 from utils import prepare_device,get_logger
 
 
-# fix random seeds for reproducibility
-SEED = 0
-torch.manual_seed(SEED)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-np.random.seed(SEED)
-random.seed(SEED)
-
 def main(config):
     logger = get_logger(name=__name__,log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
-
+    if config['seed'] is not None:
+        torch.manual_seed(config['seed'])
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        np.random.seed(config['seed'])
+        random.seed(config['seed'])
+        logger.warning('You seeded the training. '
+                        'This turns on the CUDNN deterministic setting, '
+                        'which can slow down your training '
+                        'You may see unexpected behavior when restarting '
+                        'from checkpoints.')
     # setup data_loader instances
     data_loader_obj = config.init_obj('data_loader', module_data)
     data_loader = data_loader_obj.get_train_loader()
