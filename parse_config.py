@@ -109,8 +109,9 @@ class ConfigParser:
 
     def __getitem__(self, name):
         """Access items like ordinary dict."""
-        return self.config[name]
-
+        if name in self._config:
+            return self.config[name]
+        return None
     # setting read-only attributes
     @property
     def config(self):
