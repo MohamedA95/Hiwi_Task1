@@ -95,10 +95,16 @@ def conv_weight_bias_finn(layer,file_object):
                 for m in r: 
                     file_object.write(('"{:#0x}", ').format(m))
     file_object.write("}}};\n")
+    if layer.is_bias_quant_enabled:
+        bias=layer.int_bias()
+        str_format='"{:#0x}", '
+    else:
+        bias=layer.bias
+        str_format='{:f}, '
     file_object.write("static BiasActivation<CONV2D_{0}_BMEM,CONV2D_{0}_PE, conv2d_{0}_activation_dtype,conv2d_{0}_bias_dtype> conv2d_{0}_bias =\n".format(conv2d_counter))
     file_object.write("{{\n")
-    for j in layer.int_bias():
-        file_object.write(('"{:#0x}", ').format(j))
+    for j in bias:
+        file_object.write((str_format).format(j))
     file_object.write("}};\n")
 
 def linear_weight_bias_finn(layer,file_object):
@@ -110,11 +116,16 @@ def linear_weight_bias_finn(layer,file_object):
     file_object.write("\n}}};\n")
 
     if layer.is_bias_quant_enabled:
-        file_object.write("static BiasActivation<FC_{0}_BMEM,FC_{0}_PE, fc_{0}_activation_dtype,fc_{0}_bias_dtype> fc_{0}_bias =\n".format(fullyconn_counter))
-        file_object.write("{{\n")
-        for val in layer.int_bias():
-            file_object.write(('"{:#0x}", ').format(val))
-        file_object.write("\n}};\n")
+        bias=layer.int_bias()
+        str_format='"{:#0x}", '
+    else:
+        bias=layer.bias
+        str_format='{:f}, '
+    file_object.write("static BiasActivation<FC_{0}_BMEM,FC_{0}_PE, fc_{0}_activation_dtype,fc_{0}_bias_dtype> fc_{0}_bias =\n".format(fullyconn_counter))
+    file_object.write("{{\n")
+    for val in bias:
+        file_object.write((str_format).format(val))
+    file_object.write("\n}};\n")
 
 def conv_weight_bias_array(layer,file_object):
     file_object.write("static ap_uint<CONV2D_{0}_WEIGHT_BITS> conv2d_{0}_weight [CONV2D_{0}_PE] [CONV2D_{0}_SIMD] [CONV2D_{0}_WMEM] =\n".format(conv2d_counter))
@@ -133,12 +144,20 @@ def conv_weight_bias_array(layer,file_object):
     file_object.write("};\n")
 
     if layer.is_bias_quant_enabled:
-        file_object.write("static ap_uint<CONV2D_{0}_BIAS_BITS> conv2d_{0}_bias [CONV2D_{0}_PE][CONV2D_{0}_BMEM] =\n".format(conv2d_counter))
-        file_object.write("{\n{\n")
-        for j in layer.int_bias()[0:-1]:
-            file_object.write(("{:0x},\n").format(j))
-        file_object.write(("{:0x}\n").format(layer.int_bias()[-1]))
-        file_object.write("}\n};\n")
+        bias=layer.int_bias()
+        str_format='{:0x}'
+    else:
+        bias=layer.bias
+        str_format='{:f}'
+
+    file_object.write("static ap_uint<CONV2D_{0}_BIAS_BITS> conv2d_{0}_bias [CONV2D_{0}_PE][CONV2D_{0}_BMEM] =\n".format(conv2d_counter))
+    file_object.write("{\n{\n")
+    for j in bias[0:-1]:
+        file_object.write((str_format).format(j))
+        file_object.write(",\n")
+    file_object.write((str_format).format(bias[-1]))
+    file_object.write("\n}\n};\n")
+
 
 def linear_weight_bias_array(layer,file_object):
     file_object.write("static ap_uint<FC_{0}_WEIGHT_BITS> fc_{0}_weight [FC_{0}_PE] [FC_{0}_SIMD] [FC_{0}_WMEM] =\n".format(fullyconn_counter))
@@ -149,13 +168,21 @@ def linear_weight_bias_array(layer,file_object):
             file_object.write(("{:0x}, ").format(val))
         file_object.write(("{:0x}}},\n").format(row[-1]))
     file_object.write("};\n")
+
     if layer.is_bias_quant_enabled:
-        file_object.write("static ap_uint<FC_{0}_BIAS_BITS> fc_{0}_bias [FC_{0}_PE][FC_{0}_BMEM] =".format(fullyconn_counter))
-        file_object.write("{\n{")
-        for val in layer.int_bias()[0:-1]:
-            file_object.write(("{:0x}, ").format(val))
-        file_object.write(("{:0x}}}\n").format(layer.int_bias()[-1]))
-        file_object.write("};\n")
+        bias=layer.int_bias()
+        str_format='{:0x}'
+    else:
+        bias=layer.bias
+        str_format='{:f}'
+
+    file_object.write("static ap_uint<FC_{0}_BIAS_BITS> fc_{0}_bias [FC_{0}_PE][FC_{0}_BMEM] =".format(fullyconn_counter))
+    file_object.write("{\n{")
+    for val in bias[0:-1]:
+        file_object.write((str_format).format(val))
+        file_object.write(", ")
+    file_object.write((str_format).format(bias[-1]))
+    file_object.write("}\n};\n")
 
 def parameters_extractor(model,ext_config,result_path="",fuse=False):
     """
