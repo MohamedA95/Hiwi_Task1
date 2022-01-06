@@ -36,22 +36,22 @@ ENABLE_BIAS_QUANT = True # enable bias quantization, default: False
 BIAS_QUANTIZER = Int8BiasPerTensorFixedPointInternalScaling
 
 class QuantLeNet(Module):
-    def __init__(self, bit_width=8,batchnorm=False):
+    def __init__(self, bit_width=8,batchnorm=False,enable_bias_quant=ENABLE_BIAS_QUANT):
         super(QuantLeNet, self).__init__()
         self.features = nn.Sequential(
-            *make_quant_conv2d(3, 32, 3,bit_width,bias=True,return_quant_tensor=False,batchnorm=batchnorm),
+            *make_quant_conv2d(3, 32, 3,bit_width,bias=True,return_quant_tensor=False,batchnorm=batchnorm,enable_bias_quant=enable_bias_quant),
             make_quant_relu(bit_width=bit_width,input_quant=ACT_QUANTIZER),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True),
-            *make_quant_conv2d(32, 64, 3,bit_width,bias=True,input_quant=None,return_quant_tensor=False,batchnorm=batchnorm),
+            *make_quant_conv2d(32, 64, 3,bit_width,bias=True,input_quant=None,return_quant_tensor=False,batchnorm=batchnorm,enable_bias_quant=enable_bias_quant),
             make_quant_relu(bit_width=bit_width,input_quant=ACT_QUANTIZER),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True)
             )
         self.classifier = nn.Sequential(
-            make_quant_linear(in_channels=64*6*6,out_channels=120,bit_width=bit_width,bias=True),
+            make_quant_linear(in_channels=64*6*6,out_channels=120,bit_width=bit_width,bias=True,enable_bias_quant=enable_bias_quant),
             make_quant_relu(bit_width=bit_width,input_quant=None),
-            make_quant_linear(in_channels=120,out_channels=84,bit_width=bit_width,bias=True),
+            make_quant_linear(in_channels=120,out_channels=84,bit_width=bit_width,bias=True,enable_bias_quant=enable_bias_quant),
             make_quant_relu(bit_width=bit_width,input_quant=None),
-            make_quant_linear(in_channels=84,out_channels=10,bit_width=bit_width,bias=True,return_quant_tensor=False))
+            make_quant_linear(in_channels=84,out_channels=10,bit_width=bit_width,bias=True,return_quant_tensor=False,enable_bias_quant=enable_bias_quant))
         self.features[0].cache_inference_quant_bias = True
         self.features[4].cache_inference_quant_bias = True
         self.classifier[0].cache_inference_quant_bias = True
