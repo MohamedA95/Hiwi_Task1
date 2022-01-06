@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.distributed as dist
 import torchvision.models as models
 import brevitas
 import brevitas.nn as qnn
@@ -8,7 +9,7 @@ from brevitas.quant import Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat
 from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8WeightPerTensorFloat
 from brevitas.quant import Int8Bias, Int8BiasPerTensorFloatInternalScaling, Int8BiasPerTensorFixedPointInternalScaling, Int16Bias, IntBias
 from .vgg import *
-from utils import is_master
+from utils import is_master,get_logger
 
 cfgs = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -24,6 +25,7 @@ class QuantVGG_pure(nn.Module):
 
     def __init__(self, VGG_type='A', batch_norm=False, bit_width=8, num_classes=1000, pretrained_model=None):
         super(QuantVGG_pure, self).__init__()
+        self.logger = get_logger(name=("{}{}".format(__name__,dist.get_rank()) if dist.is_initialized() else __name__))
         self.inp_quant = qnn.QuantIdentity(bit_width=bit_width, act_quant=ACT_QUANTIZER, return_quant_tensor=RETURN_QUANT_TENSOR)
         self.features = make_layers(cfgs[VGG_type], batch_norm, bit_width)
         self.avgpool = qnn.QuantAdaptiveAvgPool2d((7, 7))        
@@ -52,7 +54,7 @@ class QuantVGG_pure(nn.Module):
         self.classifier[0].cache_inference_quant_bias=True
         self.classifier[3].cache_inference_quant_bias=True
         self.classifier[6].cache_inference_quant_bias=True
-        self.logger=logging.getLogger('Worker0')
+
         if is_master():
             print_config(self.logger)
 
@@ -120,6 +122,7 @@ class QuantVGG_pure(nn.Module):
 def make_layers(cfg, batch_norm, bit_width):
     layers = []
     in_channels = 3
+    assert not(batch_norm & RETURN_QUANT_TENSOR), "nn.BatchNorm2d does not accept Quant tensor"
     for v in cfg:
         if v == 'M':
             layers += [qnn.QuantMaxPool2d(kernel_size=2, stride=2)]
@@ -144,7 +147,7 @@ def make_layers(cfg, batch_norm, bit_width):
     return nn.Sequential(*layers)
 
 def print_config(logger):
-    logger.info("Brevitas version: ", brevitas.__version__)
-    logger.info("BIAS_QUANTIZER: ",BIAS_QUANTIZER)
-    logger.info("WEIGHT_QUANTIZER: ",WEIGHT_QUANTIZER)
-    logger.info("ACT_QUANTIZER: ",ACT_QUANTIZER)
+    logger.info("Brevitas version: {}".format(brevitas.__version__))
+    logger.info("BIAS_QUANTIZER: {}".format(BIAS_QUANTIZER))
+    logger.info("WEIGHT_QUANTIZER: {}".format(WEIGHT_QUANTIZER))
+    logger.info("ACT_QUANTIZER: {}".format(ACT_QUANTIZER))
