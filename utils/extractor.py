@@ -19,7 +19,7 @@ def quant_conv2d_parser(layer, file,ext_config):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_STRIDE"), layer.stride[0]))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_PADDING"), layer.padding[0]))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_OFM_CH"), layer.out_channels))
-    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_OFM_DIM"), "((CONV2D_{0}_IFM_DIM - CONV2D_{0}_K + 2 * CONV2D_{0}_PADDING) / CONV2D_{0}_STRIDE + 1)".format(conv2d_counter)))
+    file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_OFM_DIM"), "(((CONV2D_{0}_IFM_DIM + 2 * CONV2D_{0}_PADDING - 1 * (CONV2D_{0}_K - 1)-1) / CONV2D_{0}_STRIDE) + 1)".format(conv2d_counter)))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_PE"), ext_config['PE']))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_SIMD"), ext_config['SIMD']))
     if layer.is_bias_quant_enabled:
