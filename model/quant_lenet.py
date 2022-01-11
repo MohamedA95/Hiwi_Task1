@@ -47,11 +47,11 @@ class QuantLeNet(Module):
             qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True)
             )
         self.classifier = nn.Sequential(
-            make_quant_linear(in_channels=64*6*6,out_channels=120,bit_width=bit_width,bias=True,enable_bias_quant=enable_bias_quant),
+            make_quant_linear(in_features=64*6*6,out_features=120,bit_width=bit_width,bias=True,enable_bias_quant=enable_bias_quant),
             make_quant_relu(bit_width=bit_width,input_quant=None),
-            make_quant_linear(in_channels=120,out_channels=84,bit_width=bit_width,bias=True,enable_bias_quant=enable_bias_quant),
+            make_quant_linear(in_features=120,out_features=84,bit_width=bit_width,bias=True,enable_bias_quant=enable_bias_quant),
             make_quant_relu(bit_width=bit_width,input_quant=None),
-            make_quant_linear(in_channels=84,out_channels=10,bit_width=bit_width,bias=True,return_quant_tensor=False,enable_bias_quant=enable_bias_quant))
+            make_quant_linear(in_features=84,out_features=10,bit_width=bit_width,bias=True,return_quant_tensor=False,enable_bias_quant=enable_bias_quant))
         self.features[0].cache_inference_quant_bias = True
         self.features[4].cache_inference_quant_bias = True
         self.classifier[0].cache_inference_quant_bias = True
@@ -118,8 +118,8 @@ def make_quant_conv2d(in_channels,
         layers.append(nn.BatchNorm2d(out_channels))
     return layers
 
-def make_quant_linear(in_channels,
-                      out_channels,
+def make_quant_linear(in_features,
+                      out_features,
                       bit_width,
                       bias,
                       weight_quant=WEIGHT_QUANTIZER,
@@ -135,7 +135,7 @@ def make_quant_linear(in_channels,
                       weight_narrow_range=WEIGHT_NARROW_RANGE,
                       weight_scaling_min_val=SCALING_MIN_VAL):
     bias_quant_type = QUANT_TYPE if enable_bias_quant else QuantType.FP
-    return qnn.QuantLinear(in_channels, out_channels,
+    return qnn.QuantLinear(in_features, out_features,
                            weight_quant=weight_quant,
                            bias_quant=bias_quant,
                            return_quant_tensor=return_quant_tensor,
