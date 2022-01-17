@@ -1,18 +1,21 @@
 import argparse
 import collections
+
 import torch
 from torchinfo import summary
 from tqdm import tqdm
+
 import data_loader.data_loaders as module_data
+import model as module_arch
 import model.loss as module_loss
 import model.metric as module_metric
-import model as module_arch
 from parse_config import ConfigParser
-from utils import parameters_extractor,str2bool,get_logger
+from utils import get_logger, parameters_extractor, str2bool
 
 
 def main(config):
-    logger = get_logger(name=__name__,log_dir=config.log_dir,test=True,verbosity=config['trainer']['verbosity'])
+    logger = get_logger(name=__name__, log_dir=config.log_dir,
+                        test=True, verbosity=config['trainer']['verbosity'])
     # setup data_loader instances
     data_loader_obj = config.init_obj('test_data_loader', module_data)
     test_data_loader = data_loader_obj.get_test_loader()
@@ -25,7 +28,8 @@ def main(config):
 
     logger.info('Loading checkpoint: {} ...'.format(config.resume))
     if not torch.cuda.is_available():
-        checkpoint = torch.load(config.resume,map_location=torch.device('cpu'))
+        checkpoint = torch.load(
+            config.resume, map_location=torch.device('cpu'))
     else:
         checkpoint = torch.load(config.resume)
     state_dict = checkpoint['state_dict']
@@ -35,7 +39,8 @@ def main(config):
     # prepare model for testing
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-    summary(model,input_size=[config['data_loader']['args']['batch_size']]+ config['input_size'])
+    logger.info(summary(model, input_size=[config['data_loader']
+                                           ['args']['batch_size']] + config['input_size'], verbose=0))
     model.eval()
 
     total_loss = 0.0
@@ -46,8 +51,6 @@ def main(config):
             data = data.to(device)
             target = target.to(device)
             output = model(data)
-
-            # computing loss, metrics on test set
             loss = loss_fn(output, target)
             batch_size = data.shape[0]
             total_loss += loss.item() * batch_size
@@ -62,7 +65,8 @@ def main(config):
     if 'extract' in config._config:
         if str2bool(config['extract']):
             logger.info("Extracting Parameters\n")
-            logger.info(parameters_extractor(model,config['extractor'],config.log_dir))
+            logger.info(parameters_extractor(
+                model, config['extractor'], config.log_dir))
     logger.info(log)
 
 
@@ -75,6 +79,7 @@ if __name__ == '__main__':
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target help')
-    options = [CustomArgs(['-x', '--extract'], type=str, target=('extract'), help='extract parameters of the model (default: False)')]
-    config = ConfigParser.from_args(args,options=options,test=True)
+    options = [CustomArgs(['-x', '--extract'], type=str, target=('extract'),
+                          help='extract parameters of the model (default: False)')]
+    config = ConfigParser.from_args(args, options=options, test=True)
     main(config)

@@ -1,21 +1,24 @@
 import argparse
 import collections
-import torch
-import numpy as np
 import random
-import data_loader.data_loaders as module_data
-import model.loss as module_loss
-import model.metric as module_metric
-import model as module_arch
+
+import numpy as np
+import torch
 import torch.nn as nn
 from torchinfo import summary
+
+import data_loader.data_loaders as module_data
+import model as module_arch
+import model.loss as module_loss
+import model.metric as module_metric
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import prepare_device,get_logger
+from utils import get_logger, prepare_device
 
 
 def main(config):
-    logger = get_logger(name=__name__,log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
+    logger = get_logger(name=__name__, log_dir=config.log_dir,
+                        verbosity=config['trainer']['verbosity'])
     torch.backends.cudnn.benchmark = True
     if config['seed'] is not None:
         torch.manual_seed(config['seed'])
@@ -23,10 +26,10 @@ def main(config):
         np.random.seed(config['seed'])
         random.seed(config['seed'])
         logger.warning('You seeded the training. '
-                        'This turns on the CUDNN deterministic setting, '
-                        'which can slow down your training '
-                        'You may see unexpected behavior when restarting '
-                        'from checkpoints.')
+                       'This turns on the CUDNN deterministic setting, '
+                       'which can slow down your training '
+                       'You may see unexpected behavior when restarting '
+                       'from checkpoints.')
     # setup data_loader instances
     data_loader_obj = config.init_obj('data_loader', module_data)
     data_loader = data_loader_obj.get_train_loader()
@@ -40,16 +43,19 @@ def main(config):
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    logger.info(summary(model,input_size=[config['data_loader']['args']['batch_size']]+config['input_size'],verbose=0))
-    logger.info('Trainable parameters: {}'.format(sum([p.numel() for p in trainable_params])))
-    
+    logger.info(summary(model, input_size=[
+                config['data_loader']['args']['batch_size']]+config['input_size'], verbose=0))
+    logger.info('Trainable parameters: {}'.format(
+        sum([p.numel() for p in trainable_params])))
+
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
-    # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
+    # build optimizer, learning rate scheduler.
     optimizer = config.init_obj('optimizer', torch.optim, model.parameters())
-    lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
+    lr_scheduler = config.init_obj(
+        'lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
     trainer = Trainer(model, criterion, metrics, optimizer,
                       config=config,
@@ -73,8 +79,10 @@ if __name__ == '__main__':
     # custom cli options to modify configuration from default values given in json file.
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target help')
     options = [
-        CustomArgs(['--lr', '--learning_rate'], type=float, target='optimizer;args;lr', help=""),
-        CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size', help="")
+        CustomArgs(['--lr', '--learning_rate'], type=float,
+                   target='optimizer;args;lr', help=""),
+        CustomArgs(['--bs', '--batch_size'], type=int,
+                   target='data_loader;args;batch_size', help="")
     ]
     config = ConfigParser.from_args(args, options)
     main(config)

@@ -1,7 +1,8 @@
 import argparse
-import torch
-import model as module_arch
 from pathlib import Path
+
+import torch
+
 
 """
  Takes a check point file created by the project & separats the weights "state dict" 
@@ -20,6 +21,7 @@ def main(model_path):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='Checkpint Separator')
-    args.add_argument('-m', '--model', default=None, type=str, help='path to model')
+    args.add_argument('-m', '--model', default=None,
+                      type=str, help='path to model')
     args = args.parse_args()
     main(args.model)
