@@ -33,7 +33,6 @@ class BaseTrainer:
         # configuration to monitor model performance and save best
         if not is_master() or self.monitor == 'off':
             self.mnt_mode = 'off'
-            self.mnt_best = 0
         else:
             self.mnt_mode, self.mnt_metric = self.monitor.split()
             assert self.mnt_mode in ['min', 'max']
