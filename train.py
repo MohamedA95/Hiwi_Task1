@@ -16,10 +16,10 @@ from utils import prepare_device,get_logger
 
 def main(config):
     logger = get_logger(name=__name__,log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
+    torch.backends.cudnn.benchmark = True
     if config['seed'] is not None:
         torch.manual_seed(config['seed'])
         torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
         np.random.seed(config['seed'])
         random.seed(config['seed'])
         logger.warning('You seeded the training. '
