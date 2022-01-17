@@ -13,7 +13,7 @@ import torch.multiprocessing as mp
 from torchinfo import summary
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import prepare_device,get_logger
+from utils import get_logger
 
 
 def main(config):
@@ -21,7 +21,11 @@ def main(config):
     logger = get_logger(name=__name__,log_dir=config.log_dir,verbosity=config['trainer']['verbosity'])
     if config['n_gpu'] == -1:
         config.config['n_gpu']= torch.cuda.device_count()
-    
+    if config['dist_backend'] is None:
+        config.config['dist_backend']='nccl'
+    if config['dist_url'] is None:
+        config.config['dist_url']='tcp://127.0.0.1:34567'
+
     torch.backends.cudnn.benchmark = True
     if config['seed'] is not None:
         torch.manual_seed(config['seed'])
@@ -48,7 +52,7 @@ def main_worker(gpu,config):
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
     # prepare for (multi-device) GPU training
-    torch.cuda.set_device(gpu)
+    torch.cuda.device(gpu)
     model.cuda(gpu)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu],find_unused_parameters=True)
     if gpu==0:
