@@ -1,5 +1,4 @@
 import argparse
-from pickle import TRUE
 from utils.extractor import parameters_extractor
 import torch
 import model as module_arch
@@ -21,6 +20,7 @@ def main(args):
     print('Loading checkpoint: {}'.format(model_path))
     checkpoint = torch.load(model_path,map_location='cpu')
     state_dict = checkpoint['state_dict']
+    torch.nn.modules.utils.consume_prefix_in_state_dict_if_present(state_dict,"module.")
     model.load_state_dict(state_dict)
     data=torch.randn([1]+config['input_size'])
     device = torch.device('cpu') #'cuda' if torch.cuda.is_available() else 
