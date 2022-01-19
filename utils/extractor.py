@@ -6,7 +6,7 @@ from model.quant_vgg import QuantVGG
 from pathlib import Path
 from tqdm import tqdm
 
-FINN_STRUCTURES=False
+FINN_STRUCTURES=True
 conv2d_counter = 0
 maxpool2d_counter = 0
 quantrelue_counter = 0
@@ -37,7 +37,7 @@ def quant_conv2d_parser(layer, file,ext_config):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_OA_BITS"), int(layer.quant_output_bit_width())))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_OA_INT_BITS"), int(layer.quant_output_bit_width()+torch.log2(layer.quant_output_scale()))))
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_BMEM"), "(CONV2D_{0}_OFM_CH / CONV2D_{0}_PE)".format(conv2d_counter)))
-    file.write("{:<48}{}\n\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WMEM"), "((1 * CONV2D_{0}_K * CONV2D_{0}_K * CONV2D_{0}_IFM_CH * CONV2D_{0}_OFM_CH) / (CONV2D_{0}_PE * CONV2D_{0}_SIMD))".format(conv2d_counter)))
+    file.write("{:<48}{}\n\n".format("{:s}{:d}{:s}".format("#define CONV2D_", conv2d_counter, "_WMEM"), "((CONV2D_{0}_K * CONV2D_{0}_K * CONV2D_{0}_IFM_CH * CONV2D_{0}_OFM_CH) / (CONV2D_{0}_PE * CONV2D_{0}_SIMD))".format(conv2d_counter)))
     
 def maxpool2d_parser(layer, file,ext_config):
     file.write("{:<48}{}\n".format("{:s}{:d}{:s}".format("#define MAXPOOL2D_", maxpool2d_counter, "_K"), layer.kernel_size))
@@ -195,14 +195,13 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
 
     """
     res_path=None
-    with open(Path(result_path) / "config.h", 'w') as file_object:
-        global conv2d_counter
-        global maxpool2d_counter
-        global quantrelue_counter
-        global fullyconn_counter
-        global pre_layer
-        
-        file_object.write("#ifndef CONFIG_H_\n#define CONFIG_H_\n\n\n\n")
+    global conv2d_counter
+    global maxpool2d_counter
+    global quantrelue_counter
+    global fullyconn_counter
+    global pre_layer
+    with open(Path(result_path) / "ann_config.hpp", 'w') as file_object:
+        file_object.write("#ifndef ANN_CONFIG_H_\n#define ANN_CONFIG_H_\n\n")
         file_object.write("{:<48}{}\n".format("#define DATAWIDTH",ext_config['DATAWIDTH']))
         file_object.write("{:<48}{}\n".format("#define CLASS_LABEL_BITS",ext_config['CLASS_LABEL_BITS']))
         file_object.write("{:<48}{}\n\n\n".format("#define SEQUENCE_LENGTH",ext_config['SEQUENCE_LENGTH']))
@@ -246,7 +245,12 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
                 quantReLU_parser(i,file_object,ext_config)
                 pre_layer="RELU_{}_".format(quantrelue_counter)
                 quantrelue_counter+=1
+        file_object.write("#endif")
+        res_path=file_object.name
 
+    with open(Path(result_path) / "ann_weight_bias_config.hpp", 'w') as file_object:
+        file_object.write("#ifndef ANN_WEIGHT_BIAS_CONFIG_H_\n#define ANN_WEIGHT_BIAS_CONFIG_H_\n")
+        file_object.write('#include "ann_config.hpp"\n\n')
         # Extract Conv layers Weight & Bias   
         conv2d_counter=0
         for i in tqdm(conv_layer_list,desc='Extracting conv layers weight & bias'):
@@ -265,7 +269,7 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
                 else:
                     linear_weight_bias_array(i,file_object)
                 fullyconn_counter += 1
-        
         file_object.write("#endif")
-        res_path=file_object.name
+        res_path=res_path+"\n"+file_object.name
+
     return res_path
