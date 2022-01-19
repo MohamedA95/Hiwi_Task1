@@ -39,11 +39,11 @@ class QuantLeNet(Module):
     def __init__(self, bit_width=8,batchnorm=False,enable_bias_quant=ENABLE_BIAS_QUANT):
         super(QuantLeNet, self).__init__()
         self.features = nn.Sequential(
-            *make_quant_conv2d(3, 32, 3,bit_width,bias=True,return_quant_tensor=False,batchnorm=batchnorm,enable_bias_quant=enable_bias_quant),
-            make_quant_relu(bit_width=bit_width,input_quant=ACT_QUANTIZER),
+            *make_quant_conv2d(3, 32, 3,bit_width,bias=True,return_quant_tensor=not batchnorm,batchnorm=batchnorm,enable_bias_quant=enable_bias_quant),
+            make_quant_relu(bit_width=bit_width,input_quant= ACT_QUANTIZER if batchnorm else None),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True),
-            *make_quant_conv2d(32, 64, 3,bit_width,bias=True,input_quant=None,return_quant_tensor=False,batchnorm=batchnorm,enable_bias_quant=enable_bias_quant),
-            make_quant_relu(bit_width=bit_width,input_quant=ACT_QUANTIZER),
+            *make_quant_conv2d(32, 64, 3,bit_width,bias=True,input_quant=None,return_quant_tensor=not batchnorm,batchnorm=batchnorm,enable_bias_quant=enable_bias_quant),
+            make_quant_relu(bit_width=bit_width,input_quant= ACT_QUANTIZER if batchnorm else None),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2, return_quant_tensor=True)
             )
         self.classifier = nn.Sequential(
