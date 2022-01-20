@@ -214,5 +214,6 @@ Configrations to be used in the resulting config.h file
 ```
 ## To Do
 -Generic model initialization from PyTorch\
- ## Notes
- -If you get NCCL error rerun with `export NCCL_DEBUG=WARN`
+## Notes
+* If you get NCCL errors rerun with `export NCCL_DEBUG=WARN`
+* If you get `RuntimeError: CUDA error: all CUDA-capable devices are busy or unavailable` while training with DDP try setting `pin_memory` to false in `config.json`
