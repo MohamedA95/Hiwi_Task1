@@ -71,7 +71,7 @@ class BaseTrainer:
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
             if dist.is_initialized():
-                self.train_sampler.set_epoch(epoch)
+                self.train_sampler.set_epoch(epoch-1)
             result = self._train_epoch(epoch)
 
             # save logged informations into log dict
