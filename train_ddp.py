@@ -53,7 +53,6 @@ def main_worker(gpu, config):
     # setup data_loader instances
     # Needs modification to support multinode
     config.config['data_loader']['args']['batch_size'] //= config['n_gpu']
-    # Needs modification to support multinode
     config.config['data_loader']['args']['num_workers'] //= config['n_gpu']
     data_loader_obj = config.init_obj('data_loader', module_data)
     data_loader = data_loader_obj.get_train_loader()
