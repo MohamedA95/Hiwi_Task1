@@ -3,7 +3,7 @@ from utils.extractor import parameters_extractor
 import torch
 import model as module_arch
 from pathlib import Path
-from utils import read_json,str2bool
+from utils import read_json,str2bool,consume_prefix_in_state_dict_if_present
 
 """
  Extracts layers properites, weight & bias and writes the result to .h file  with the model name
@@ -20,7 +20,7 @@ def main(args):
     print('Loading checkpoint: {}'.format(model_path))
     checkpoint = torch.load(model_path,map_location='cpu')
     state_dict = checkpoint['state_dict']
-    torch.nn.modules.utils.consume_prefix_in_state_dict_if_present(state_dict,"module.")
+    consume_prefix_in_state_dict_if_present(state_dict,"module.")
     model.load_state_dict(state_dict)
     data=torch.randn([1]+config['input_size'])
     device = torch.device('cpu') #'cuda' if torch.cuda.is_available() else 
