@@ -10,7 +10,7 @@ import model as module_arch
 import model.loss as module_loss
 import model.metric as module_metric
 from parse_config import ConfigParser
-from utils import get_logger, parameters_extractor, str2bool
+from utils import get_logger, parameters_extractor, str2bool, consume_prefix_in_state_dict_if_present
 
 
 def main(config):
@@ -33,7 +33,7 @@ def main(config):
     else:
         checkpoint = torch.load(config.resume)
     state_dict = checkpoint['state_dict']
-    # torch.nn.modules.utils.consume_prefix_in_state_dict_if_present(state_dict,"module.")
+    consume_prefix_in_state_dict_if_present(state_dict,"module.")
     model.load_state_dict(state_dict)
 
     # prepare model for testing

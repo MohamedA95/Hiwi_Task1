@@ -104,10 +104,10 @@ class BaseTrainer:
                     self.logger.info("Monitor metric did\'t improve for epoch#: {}".format(epoch))
 
                 if not_improved_count > self.early_stop:
-                    self.logger.info("Monitor metric didn\'t improve for {} epochs. "
-                                     "Training stops.".format(self.early_stop))
+                    self.logger.info("Monitor metric didn\'t improve for {} epochs Training stops.".format(self.early_stop))
                     if dist.is_initialized():
                         dist.destroy_process_group()
+                    exit(0)
             if is_master() and (epoch % self.save_period == 0 or best):
                 state=self._generate_model_state(epoch)
                 if epoch % self.save_period == 0:

@@ -17,7 +17,7 @@ import model.loss as module_loss
 import model.metric as module_metric
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import read_json
+from utils import read_json,consume_prefix_in_state_dict_if_present
 
 '''
  fuser.py
@@ -34,8 +34,7 @@ def main(config):
     print('Loading checkpoint: {} ...'.format(config.resume))
     checkpoint = torch.load(config.resume, map_location=torch.device('cpu'))
     state_dict = checkpoint['state_dict']
-    torch.nn.modules.utils.consume_prefix_in_state_dict_if_present(
-        state_dict, "module.")
+    consume_prefix_in_state_dict_if_present(state_dict, "module.")
     model.load_state_dict(state_dict)
     model.eval()
     fused_model.eval()
@@ -51,14 +50,14 @@ def main(config):
                     bn, nn.BatchNorm2d), "The layer after QuantConv2d is not nn.BatchNorm2d"
                 i = fuse_conv_bn_eval(i, bn)
                 # merge_bn(i, bn)
-                fused_model.features[fusedindex] = copy.deepcopy(i)
+                fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
                 pbar.update()
             elif isinstance(i, torch.nn.modules.pooling.MaxPool2d):
-                fused_model.features[fusedindex] = copy.deepcopy(i)
+                fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
             elif isinstance(i, brevitas.nn.quant_activation.QuantReLU) or isinstance(i, torch.nn.modules.activation.ReLU):
-                fused_model.features[fusedindex] = copy.deepcopy(i)
+                fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
             else:
                 print(
@@ -66,7 +65,7 @@ def main(config):
                 exit()
             i = next(features_iter, None)
             pbar.update()
-    fused_model.classifier = copy.deepcopy(model.classifier)
+    fused_model.classifier.load_state_dict(model.classifier.state_dict())
     # Start training
     print("Finished fusing, Strarting training...")
     json_config = read_json(config.resume.parent / 'config.json')
