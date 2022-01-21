@@ -2,6 +2,7 @@ import torch
 import pathlib
 import brevitas
 from brevitas.nn.utils import merge_bn
+from torch.nn.utils.fusion import fuse_conv_bn_eval
 from model.quant_vgg import QuantVGG
 from pathlib import Path
 from tqdm import tqdm
@@ -215,7 +216,8 @@ def parameters_extractor(model,ext_config,result_path="",fuse=False):
                 if isinstance(i,brevitas.nn.quant_conv.QuantConv2d):
                     if fuse:
                         bn=next(features_iter)
-                        merge_bn(i,bn)
+                        i = fuse_conv_bn_eval(i, bn)
+                        # merge_bn(i,bn)
                         pbar.update()
                         print("Fusing BatchNorm2d with Conv2d layer:{}".format(conv2d_counter))
                     quant_conv2d_parser(i, file_object,ext_config)
