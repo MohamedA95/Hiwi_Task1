@@ -18,11 +18,10 @@ python test.py --resume path_to_model.pth
 ```
 
 ## How to fuse `nn.BatchNorm2d` with `QuantConv2d` in a model?
-`fuser.py` can be used to do so, currently it works only for quantized models.
+`fuser.py` can be used to do so.
 ```bash
-python fuser.py --ep 20 -r /path/to/pth/file
+python fuser.py -r /path/to/pth/file
 ```
-* `--ep` Controls the number of epochs to train after fusion.
 * `--bs` Controls the batch size. 
 
 ## How to extract parameters from model?
