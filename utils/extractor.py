@@ -7,7 +7,7 @@ from model.quant_vgg import QuantVGG
 from pathlib import Path
 from tqdm import tqdm
 
-FINN_STRUCTURES=True
+FINN_STRUCTURES=False
 conv2d_counter = 0
 maxpool2d_counter = 0
 quantrelue_counter = 0
