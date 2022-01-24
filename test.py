@@ -19,8 +19,6 @@ def main(config):
     # setup data_loader instances
     data_loader_obj = config.init_obj('test_data_loader', module_data)
     test_data_loader = data_loader_obj.get_test_loader()
-    # build model architecture
-    model = config.init_obj('arch', module_arch)
 
     # get function handles of loss and metrics
     loss_fn = getattr(module_loss, config['loss'])
@@ -32,8 +30,15 @@ def main(config):
             config.resume, map_location=torch.device('cpu'))
     else:
         checkpoint = torch.load(config.resume)
+
+    if len(checkpoint.keys()) == 1 and str2bool(input("Is this a fused model y/n? ")):
+        model = config.init_obj('arch', module_arch, batchnorm=False)
+    else:
+        model = config.init_obj('arch', module_arch)
+    # build model architecture
+
     state_dict = checkpoint['state_dict']
-    consume_prefix_in_state_dict_if_present(state_dict,"module.")
+    consume_prefix_in_state_dict_if_present(state_dict, "module.")
     model.load_state_dict(state_dict)
 
     # prepare model for testing
