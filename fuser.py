@@ -3,6 +3,7 @@ import collections
 import copy
 
 import brevitas
+import brevitas.nn as qnn
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -17,7 +18,7 @@ import model.loss as module_loss
 import model.metric as module_metric
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import read_json,consume_prefix_in_state_dict_if_present
+from utils import consume_prefix_in_state_dict_if_present, read_json
 
 '''
  fuser.py
@@ -44,7 +45,7 @@ def main(config):
     with tqdm(total=len(model.features), desc='Fusing the model') as pbar:
         i = next(features_iter, None)
         while i != None:
-            if isinstance(i, brevitas.nn.quant_conv.QuantConv2d) or isinstance(i, torch.nn.modules.conv.Conv2d):
+            if isinstance(i, qnn.QuantConv2d) or isinstance(i, torch.nn.modules.conv.Conv2d):
                 bn = next(features_iter)
                 assert isinstance(
                     bn, nn.BatchNorm2d), "The layer after QuantConv2d is not nn.BatchNorm2d"
@@ -53,10 +54,10 @@ def main(config):
                 fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
                 pbar.update()
-            elif isinstance(i, torch.nn.modules.pooling.MaxPool2d):
+            elif isinstance(i, qnn.QuantMaxPool2d) or isinstance(i, torch.nn.modules.pooling.MaxPool2d):
                 fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
-            elif isinstance(i, brevitas.nn.quant_activation.QuantReLU) or isinstance(i, torch.nn.modules.activation.ReLU):
+            elif isinstance(i, qnn.QuantReLU) or isinstance(i, torch.nn.modules.activation.ReLU):
                 fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
             else:
@@ -66,52 +67,10 @@ def main(config):
             i = next(features_iter, None)
             pbar.update()
     fused_model.classifier.load_state_dict(model.classifier.state_dict())
-    # Start training
-    print("Finished fusing, Strarting training...")
-    json_config = read_json(config.resume.parent / 'config.json')
-    json_config['name'] += '_fused'
-    json_config['arch']['args']['batchnorm'] = False
-    json_config['trainer']['save_dir'] = '/'.join(
-        json_config['trainer']['save_dir'].split('/')[:-1])
-    json_config['trainer']['epochs'] = config['trainer']['epochs']
-    json_config['data_loader']['args']['batch_size'] = config['data_loader']['args']['batch_size']
-    new_config = ConfigParser(json_config)
-    torch.backends.cudnn.benchmark = True
-    # get function handles of loss and metrics
-    criterion = getattr(module_loss, new_config['loss'])
-    metrics = [getattr(module_metric, met) for met in new_config['metrics']]
-    dist.init_process_group(
-        backend='nccl', init_method='tcp://127.0.0.1:34567', world_size=1, rank=0)
-    # setup data_loader instances
-    new_config.config['data_loader']['args']['batch_size'] //= new_config['n_gpu']
-    new_config.config['data_loader']['args']['num_workers'] //= new_config['n_gpu']
-    data_loader_obj = new_config.init_obj('data_loader', module_data)
-    data_loader = data_loader_obj.get_train_loader()
-    valid_data_loader = data_loader_obj.get_valid_loader()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # torch.cuda.device(0)
-    fused_model.to(device)
-    fused_model = torch.nn.parallel.DistributedDataParallel(
-        fused_model, find_unused_parameters=True)
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    summary(fused_model, input_size=[
-            new_config['data_loader']['args']['batch_size']]+new_config['input_size'])
-    print('Trainable parameters: {}'.format(
-        sum([p.numel() for p in trainable_params])))
-    # build optimizer, learning rate scheduler.
-    optimizer = new_config.init_obj(
-        'optimizer', torch.optim, model.parameters())
-    lr_scheduler = new_config.init_obj(
-        'lr_scheduler', torch.optim.lr_scheduler, optimizer)
-    trainer = Trainer(fused_model, criterion, metrics, optimizer,
-                      config=new_config,
-                      device=device,
-                      data_loader=data_loader,
-                      valid_data_loader=valid_data_loader,
-                      lr_scheduler=lr_scheduler,
-                      train_sampler=data_loader_obj.train_sampler)
-
-    trainer.train()
+    fused_path = config.resume.parent / (config.resume.name[:-4]+'_fused.pth')
+    checkpoint = {'state_dict': fused_model.state_dict()}
+    torch.save(checkpoint, fused_path)
+    print("Fused Model is saved at:\n{0}".format(fused_path))
 
 
 if __name__ == '__main__':
@@ -123,11 +82,55 @@ if __name__ == '__main__':
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target help')
-    options = [
-        CustomArgs(['--ep', '--epochs'], type=int,
-                   target='trainer;epochs', help=""),
-        CustomArgs(['--bs', '--batch_size'], type=int,
-                   target='data_loader;args;batch_size', help="")
-    ]
+    options = [CustomArgs(['--bs', '--batch_size'], type=int,
+                          target='data_loader;args;batch_size', help="")]
     config = ConfigParser.from_args(args, options, test=True)
     main(config)
+
+
+    # # Start training
+    # print("Finished fusing, Strarting training...")
+    # json_config = read_json(config.resume.parent / 'config.json')
+    # json_config['name'] += '_fused'
+    # json_config['arch']['args']['batchnorm'] = False
+    # json_config['trainer']['save_dir'] = '/'.join(
+    #     json_config['trainer']['save_dir'].split('/')[:-1])
+    # json_config['trainer']['epochs'] = config['trainer']['epochs']
+    # json_config['data_loader']['args']['batch_size'] = config['data_loader']['args']['batch_size']
+    # new_config = ConfigParser(json_config)
+    # torch.backends.cudnn.benchmark = True
+    # # get function handles of loss and metrics
+    # criterion = getattr(module_loss, new_config['loss'])
+    # metrics = [getattr(module_metric, met) for met in new_config['metrics']]
+    # dist.init_process_group(
+    #     backend='nccl', init_method='tcp://127.0.0.1:34567', world_size=1, rank=0)
+    # # setup data_loader instances
+    # new_config.config['data_loader']['args']['batch_size'] //= new_config['n_gpu']
+    # new_config.config['data_loader']['args']['num_workers'] //= new_config['n_gpu']
+    # data_loader_obj = new_config.init_obj('data_loader', module_data)
+    # data_loader = data_loader_obj.get_train_loader()
+    # valid_data_loader = data_loader_obj.get_valid_loader()
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # # torch.cuda.device(0)
+    # fused_model.to(device)
+    # fused_model = torch.nn.parallel.DistributedDataParallel(
+    #     fused_model, find_unused_parameters=True)
+    # trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+    # summary(fused_model, input_size=[
+    #         new_config['data_loader']['args']['batch_size']]+new_config['input_size'])
+    # print('Trainable parameters: {}'.format(
+    #     sum([p.numel() for p in trainable_params])))
+    # # build optimizer, learning rate scheduler.
+    # optimizer = new_config.init_obj(
+    #     'optimizer', torch.optim, model.parameters())
+    # lr_scheduler = new_config.init_obj(
+    #     'lr_scheduler', torch.optim.lr_scheduler, optimizer)
+    # trainer = Trainer(fused_model, criterion, metrics, optimizer,
+    #                   config=new_config,
+    #                   device=device,
+    #                   data_loader=data_loader,
+    #                   valid_data_loader=valid_data_loader,
+    #                   lr_scheduler=lr_scheduler,
+    #                   train_sampler=data_loader_obj.train_sampler)
+
+    # trainer.train()
