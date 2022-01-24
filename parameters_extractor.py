@@ -16,9 +16,11 @@ def main(args):
     model_path= Path(args.model)
     config_path = model_path.parent.joinpath('config.json')
     config = read_json(config_path)
-    model = getattr(module_arch,config['arch']['type'])(**dict(config['arch']['args']))
     print('Loading checkpoint: {}'.format(model_path))
     checkpoint = torch.load(model_path,map_location='cpu')
+    if len(checkpoint.keys()) == 1 and str2bool(input("Is this a fused model y/n? ")):
+        config['arch']['args']['batchnorm'] = False
+    model = getattr(module_arch,config['arch']['type'])(**dict(config['arch']['args']))
     state_dict = checkpoint['state_dict']
     consume_prefix_in_state_dict_if_present(state_dict,"module.")
     model.load_state_dict(state_dict)
