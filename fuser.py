@@ -1,6 +1,5 @@
 import argparse
 import collections
-import copy
 
 import brevitas
 import brevitas.nn as qnn
@@ -12,13 +11,9 @@ from torch.nn.utils.fusion import fuse_conv_bn_eval
 from torchinfo import summary
 from tqdm import tqdm
 
-import data_loader.data_loaders as module_data
 import model as module_arch
-import model.loss as module_loss
-import model.metric as module_metric
 from parse_config import ConfigParser
-from trainer import Trainer
-from utils import consume_prefix_in_state_dict_if_present, read_json
+from utils import consume_prefix_in_state_dict_if_present
 
 '''
  fuser.py
@@ -45,7 +40,7 @@ def main(config):
     with tqdm(total=len(model.features), desc='Fusing the model') as pbar:
         i = next(features_iter, None)
         while i != None:
-            if isinstance(i, qnn.QuantConv2d) or isinstance(i, torch.nn.modules.conv.Conv2d):
+            if isinstance(i, qnn.QuantConv2d) or isinstance(i, nn.Conv2d):
                 bn = next(features_iter)
                 assert isinstance(
                     bn, nn.BatchNorm2d), "The layer after QuantConv2d is not nn.BatchNorm2d"
@@ -54,10 +49,10 @@ def main(config):
                 fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
                 pbar.update()
-            elif isinstance(i, qnn.QuantMaxPool2d) or isinstance(i, torch.nn.modules.pooling.MaxPool2d):
+            elif isinstance(i, qnn.QuantMaxPool2d) or isinstance(i, nn.MaxPool2d):
                 fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
-            elif isinstance(i, qnn.QuantReLU) or isinstance(i, torch.nn.modules.activation.ReLU):
+            elif isinstance(i, qnn.QuantReLU) or isinstance(i, nn.ReLU):
                 fused_model.features[fusedindex].load_state_dict(i.state_dict())
                 fusedindex += 1
             else:
