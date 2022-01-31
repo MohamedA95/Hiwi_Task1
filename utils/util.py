@@ -86,7 +86,25 @@ def get_logger(name=None, log_dir='saved/', test=False, verbosity=2):
     logger.setLevel(log_levels[verbosity])
     return logger
 
+def bin_digits(val,num_bits):
+    """Returns the correct binary value of val
 
+    Args:
+        val: Decimal value to convert to binary
+        num_bits: Number of bits to use
+    Returns:
+        A string containing the resulting binary value without 0b or minus 
+    Thanks Jonas:)
+    """
+    if num_bits%4 != 0:
+        num_bits=(num_bits+4)-(num_bits%4)
+    s = bin(val & int("1" * num_bits, 2))[2:]
+    d = '{:0>{num_bits}}'.format(s,num_bits=num_bits)
+    res=''
+    for i in range(0,len(d),4):
+        res+=hex(int(d[i:i+4],base=2))[2:]
+    return res
+     
 class MetricTracker:
     def __init__(self, *keys, writer=None):
         self.writer = writer
