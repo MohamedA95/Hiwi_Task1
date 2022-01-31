@@ -139,8 +139,8 @@ def conv_weight_bias_array(layer,file_object,weight_bit_width,bias_bit_width):
             for r in k:
                 file_object.write("{")
                 for m in r[0:-1]: 
-                    file_object.write(("{0}, ").format(bin_digits(m,weight_bit_width)))
-                file_object.write(("{0}}},\n").format(bin_digits(r[-1],weight_bit_width)))
+                    file_object.write(("0x{0}, ").format(bin_digits(m,weight_bit_width)))
+                file_object.write(("0x{0}}},\n").format(bin_digits(r[-1],weight_bit_width)))
             file_object.write("},\n")
         file_object.write("}\n")
     file_object.write("};\n")
@@ -150,9 +150,9 @@ def conv_weight_bias_array(layer,file_object,weight_bit_width,bias_bit_width):
     file_object.write("{\n{\n")
     if layer.is_bias_quant_enabled:
         for j in layer.int_bias()[0:-1]:
-            file_object.write(('{0}').format(bin_digits(j,bias_bit_width)))
+            file_object.write(('0x{0}').format(bin_digits(j,bias_bit_width)))
             file_object.write(",\n")
-        file_object.write(('{0}').format(bin_digits(layer.int_bias()[-1],bias_bit_width)))
+        file_object.write(('0x{0}').format(bin_digits(layer.int_bias()[-1],bias_bit_width)))
     else:
         for j in layer.bias[0:-1]:
             file_object.write(('{:f}').format(j))
@@ -167,8 +167,8 @@ def linear_weight_bias_array(layer,file_object,weight_bit_width,bias_bit_width):
     for row in layer.int_weight():
         file_object.write("{")
         for val in row[0:-1]:
-            file_object.write(("{0}, ").format(bin_digits(val,weight_bit_width)))
-        file_object.write(("{0}}},\n").format(bin_digits(row[-1],weight_bit_width)))
+            file_object.write(("0x{0}, ").format(bin_digits(val,weight_bit_width)))
+        file_object.write(("0x{0}}},\n").format(bin_digits(row[-1],weight_bit_width)))
     file_object.write("};\n")
 
     file_object.write("static ap_uint<FC_{0}_BIAS_BITS> fc_{0}_bias [FC_{0}_PE][FC_{0}_BMEM] =".format(fullyconn_counter))
@@ -176,9 +176,9 @@ def linear_weight_bias_array(layer,file_object,weight_bit_width,bias_bit_width):
 
     if layer.is_bias_quant_enabled:
         for val in layer.int_bias()[0:-1]:
-            file_object.write(('{0}').format(bin_digits(val,bias_bit_width)))
+            file_object.write(('0x{0}').format(bin_digits(val,bias_bit_width)))
             file_object.write(", ")
-        file_object.write(('{0}').format(bin_digits(layer.int_bias()[-1],bias_bit_width)))
+        file_object.write(('0x{0}').format(bin_digits(layer.int_bias()[-1],bias_bit_width)))
     else:
         for val in layer.bias[0:-1]:
             file_object.write(('{:f}').format(val))
