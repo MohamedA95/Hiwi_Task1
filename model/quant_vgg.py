@@ -11,7 +11,7 @@ from brevitas.quant import (Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat,
                             Int8BiasPerTensorFloatInternalScaling,
                             Int8WeightPerTensorFixedPoint,
                             Int8WeightPerTensorFloat, Int16Bias, IntBias,
-                            Uint8ActPerTensorFloatMaxInit)
+                            Uint8ActPerTensorFixedPoint)
 from utils import get_logger, is_master
 from .vgg import *
 
@@ -24,9 +24,9 @@ cfgs = {
 BIAS_QUANTIZER = Int8Bias
 WEIGHT_QUANTIZER = Int8WeightPerTensorFixedPoint
 INPUT_QUANTIZER = Int8ActPerTensorFixedPoint
-ACT_QUANTIZER = Uint8ActPerTensorFloatMaxInit
+ACT_QUANTIZER = Uint8ActPerTensorFixedPoint
 RETURN_QUANT_TENSOR = True
-WEIGHT_SCALING_PER_OUTPUT_CHANNEL = True
+WEIGHT_SCALING_PER_OUTPUT_CHANNEL = False
 SCALING_MIN_VAL = 2e-16
 ACT_SCALING_MAX_VAL = 6.0
 
@@ -49,9 +49,6 @@ class QuantVGG(nn.Module):
                             return_quant_tensor=RETURN_QUANT_TENSOR),
             qnn.QuantReLU(bit_width=bit_width,
                           act_quant=ACT_QUANTIZER,
-                          scaling_min_val=SCALING_MIN_VAL,
-                          max_val=ACT_SCALING_MAX_VAL,
-                          restrict_scaling_type=RestrictValueType.LOG_FP,
                           return_quant_tensor=RETURN_QUANT_TENSOR),
             qnn.QuantDropout(),
             qnn.QuantLinear(4096, 4096,
@@ -63,9 +60,6 @@ class QuantVGG(nn.Module):
                             return_quant_tensor=RETURN_QUANT_TENSOR),
             qnn.QuantReLU(bit_width=bit_width,
                           act_quant=ACT_QUANTIZER,
-                          scaling_min_val=SCALING_MIN_VAL,
-                          max_val=ACT_SCALING_MAX_VAL,
-                          restrict_scaling_type=RestrictValueType.LOG_FP,
                           return_quant_tensor=RETURN_QUANT_TENSOR),
             nn.Dropout(),
             qnn.QuantLinear(4096, num_classes,
@@ -170,9 +164,6 @@ def make_layers(cfg, batch_norm, bit_width):
             conv2d.cache_inference_quant_bias = True
             act = qnn.QuantReLU(bit_width=bit_width,
                                 act_quant=ACT_QUANTIZER,
-                                scaling_min_val=SCALING_MIN_VAL,
-                                max_val=ACT_SCALING_MAX_VAL,
-                                restrict_scaling_type=RestrictValueType.LOG_FP,
                                 return_quant_tensor=RETURN_QUANT_TENSOR)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), act]
