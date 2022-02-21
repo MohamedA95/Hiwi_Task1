@@ -8,7 +8,7 @@ from pathlib import Path
 from tqdm import tqdm
 from .util import bin_digits
 
-FINN_STRUCTURES=False
+FINN_STRUCTURES=True
 conv2d_counter = 0
 maxpool2d_counter = 0
 quantrelu_counter = 0
@@ -91,22 +91,17 @@ def fullyconn_parser(layer,file,ext_config):
 def conv_weight_bias_finn(layer,file_object,weight_bit_width,bias_bit_width):
     file_object.write("static FixedPointWeights<CONV2D_{0}_SIMD, conv2d_{0}_weight_dtype,CONV2D_{0}_PE,CONV2D_{0}_WMEM> conv2d_{0}_weights =\n".format(conv2d_counter))
     file_object.write("{{{\n")
-    for j in layer.int_weight():
-        for k in j:
-            for r in k:
-                for m in r: 
-                    file_object.write(('"0x{0}", ').format(bin_digits(m,weight_bit_width)))
+    for och in range(layer.int_weight().shape[0]):
+        for kr in range(layer.int_weight().shape[2]):
+            for kc in range(layer.int_weight().shape[3]):
+                for ich in range(layer.int_weight().shape[1]):
+                    file_object.write(('"0x{0}", ').format(bin_digits(layer.int_weight()[och][ich][kr][kc],weight_bit_width)))
     file_object.write("}}};\n")
-    if layer.is_bias_quant_enabled:
-        bias=layer.int_bias()
-        str_format='"0x{0}", '
-    else:
-        bias=layer.bias
-        str_format='{:f}, '
+    
     file_object.write("static BiasActivation<CONV2D_{0}_BMEM,CONV2D_{0}_PE, conv2d_{0}_activation_dtype,conv2d_{0}_bias_dtype> conv2d_{0}_bias =\n".format(conv2d_counter))
     file_object.write("{{\n")
-    for j in bias:
-        file_object.write((str_format).format(bin_digits(j,bias_bit_width)))
+    for val in layer.quant_bias().value:
+        file_object.write(('{:f}, ').format(float(val)))
     file_object.write("}};\n")
 
 def linear_weight_bias_finn(layer,file_object,weight_bit_width,bias_bit_width):
@@ -139,8 +134,8 @@ def conv_weight_bias_array(layer,file_object,weight_bit_width,bias_bit_width):
             for r in k:
                 file_object.write("{")
                 for m in r[0:-1]: 
-                    file_object.write(("{0}, ").format(bin_digits(m,weight_bit_width)))
-                file_object.write(("{0}}},\n").format(bin_digits(r[-1],weight_bit_width)))
+                    file_object.write(("0x{0}, ").format(bin_digits(m,weight_bit_width)))
+                file_object.write(("0x{0}}},\n").format(bin_digits(r[-1],weight_bit_width)))
             file_object.write("},\n")
         file_object.write("}\n")
     file_object.write("};\n")
@@ -150,9 +145,9 @@ def conv_weight_bias_array(layer,file_object,weight_bit_width,bias_bit_width):
     file_object.write("{\n{\n")
     if layer.is_bias_quant_enabled:
         for j in layer.int_bias()[0:-1]:
-            file_object.write(('{0}').format(bin_digits(j,bias_bit_width)))
+            file_object.write(('0x{0}').format(bin_digits(j,bias_bit_width)))
             file_object.write(",\n")
-        file_object.write(('{0}').format(bin_digits(layer.int_bias()[-1],bias_bit_width)))
+        file_object.write(('0x{0}').format(bin_digits(layer.int_bias()[-1],bias_bit_width)))
     else:
         for j in layer.bias[0:-1]:
             file_object.write(('{:f}').format(j))
@@ -167,8 +162,8 @@ def linear_weight_bias_array(layer,file_object,weight_bit_width,bias_bit_width):
     for row in layer.int_weight():
         file_object.write("{")
         for val in row[0:-1]:
-            file_object.write(("{0}, ").format(bin_digits(val,weight_bit_width)))
-        file_object.write(("{0}}},\n").format(bin_digits(row[-1],weight_bit_width)))
+            file_object.write(("0x{0}, ").format(bin_digits(val,weight_bit_width)))
+        file_object.write(("0x{0}}},\n").format(bin_digits(row[-1],weight_bit_width)))
     file_object.write("};\n")
 
     file_object.write("static ap_uint<FC_{0}_BIAS_BITS> fc_{0}_bias [FC_{0}_PE][FC_{0}_BMEM] =".format(fullyconn_counter))
@@ -176,9 +171,9 @@ def linear_weight_bias_array(layer,file_object,weight_bit_width,bias_bit_width):
 
     if layer.is_bias_quant_enabled:
         for val in layer.int_bias()[0:-1]:
-            file_object.write(('{0}').format(bin_digits(val,bias_bit_width)))
+            file_object.write(('0x{0}').format(bin_digits(val,bias_bit_width)))
             file_object.write(", ")
-        file_object.write(('{0}').format(bin_digits(layer.int_bias()[-1],bias_bit_width)))
+        file_object.write(('0x{0}').format(bin_digits(layer.int_bias()[-1],bias_bit_width)))
     else:
         for val in layer.bias[0:-1]:
             file_object.write(('{:f}').format(val))
