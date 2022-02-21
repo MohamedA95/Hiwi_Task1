@@ -12,7 +12,7 @@ from brevitas.quant import (Int8ActPerTensorFixedPoint, Int8ActPerTensorFloat,
                             Int8BiasPerTensorFloatInternalScaling,
                             Int8WeightPerTensorFixedPoint,
                             Int8WeightPerTensorFloat, Int16Bias, IntBias,
-                            Uint8ActPerTensorFixedPoint)
+                            Uint8ActPerTensorFixedPoint, Uint8ActPerTensorFloat)
 from torch import nn
 from torch.nn import Module
 
@@ -23,7 +23,7 @@ ACT_SCALING_RESTRICT_SCALING_TYPE = RestrictValueType.LOG_FP
 ACT_MAX_VAL = 6.0
 ACT_QUANTIZER = Uint8ActPerTensorFixedPoint
 
-WEIGHT_SCALING_PER_OUTPUT_CHANNEL = False  # custom 200 epoch
+WEIGHT_SCALING_PER_OUTPUT_CHANNEL = False
 WEIGHT_QUANTIZER = Int8WeightPerTensorFixedPoint
 
 ACT_RETURN_QUANT_TENSOR = True
@@ -39,22 +39,26 @@ class QuantLeNet(Module):
         self.features = nn.Sequential(
             *make_quant_conv2d(3, 32, 3, bit_width, bias=True, return_quant_tensor=not batchnorm,
                                batchnorm=batchnorm, enable_bias_quant=enable_bias_quant),
-            make_quant_relu(bit_width=bit_width, act_quant=ACT_QUANTIZER),
+            make_quant_relu(bit_width, INPUT_QUANTIZER,
+                            act_quant=ACT_QUANTIZER),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2,
                                return_quant_tensor=True),
             *make_quant_conv2d(32, 64, 3, bit_width, bias=True, input_quant=None,
                                return_quant_tensor=not batchnorm, batchnorm=batchnorm, enable_bias_quant=enable_bias_quant),
-            make_quant_relu(bit_width=bit_width, act_quant=ACT_QUANTIZER),
+            make_quant_relu(bit_width, INPUT_QUANTIZER,
+                            act_quant=ACT_QUANTIZER),
             qnn.QuantMaxPool2d(kernel_size=2, stride=2,
                                return_quant_tensor=True)
         )
         self.classifier = nn.Sequential(
             make_quant_linear(in_features=64*6*6, out_features=120,
                               bit_width=bit_width, bias=True, enable_bias_quant=enable_bias_quant),
-            make_quant_relu(bit_width=bit_width, act_quant=ACT_QUANTIZER),
+            make_quant_relu(bit_width, INPUT_QUANTIZER,
+                            act_quant=ACT_QUANTIZER),
             make_quant_linear(in_features=120, out_features=84, bit_width=bit_width,
                               bias=True, enable_bias_quant=enable_bias_quant),
-            make_quant_relu(bit_width=bit_width, act_quant=ACT_QUANTIZER),
+            make_quant_relu(bit_width, INPUT_QUANTIZER,
+                            act_quant=ACT_QUANTIZER),
             make_quant_linear(in_features=84, out_features=10, bit_width=bit_width, bias=True, return_quant_tensor=False, enable_bias_quant=enable_bias_quant))
         self.features[0].cache_inference_quant_bias = True
         self.features[4].cache_inference_quant_bias = True
@@ -140,12 +144,14 @@ def make_quant_linear(in_features,
 
 
 def make_quant_relu(bit_width,
+                    input_quant,
                     act_quant=ACT_QUANTIZER,
                     restrict_scaling_type=ACT_SCALING_RESTRICT_SCALING_TYPE,
                     scaling_min_val=SCALING_MIN_VAL,
                     max_val=ACT_MAX_VAL,
                     return_quant_tensor=ACT_RETURN_QUANT_TENSOR):
     return qnn.QuantReLU(bit_width=bit_width,
+                         input_quant=input_quant,
                          act_quant=act_quant,
                          restrict_scaling_type=restrict_scaling_type,
                          scaling_min_val=scaling_min_val,
