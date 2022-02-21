@@ -1,23 +1,38 @@
 {
-    "name": "C10_Lenet",
+    "name": "C10_QLeNet2008Bit",
     "n_gpu": 1,
+    "dist_backend":"nccl",
+    "dist_url":"tcp://127.0.0.1:34567",
     "input_size": [3,32,32],
     "arch": {
         "type": "QuantLeNet",
         "args": {
+            "bit_width":8,
+            "batchnorm":true
         }
     },
     "data_loader": {
         "type": "CIFAR_data_loader",
         "args":{
-            "data_dir": "./data",
-            "batch_size": 512,
+            "data_dir": "/scratch/mmoursi",
+            "batch_size": 2048,
             "download": true,
             "shuffle": true,
             "validation_split": 0.1,
-            "num_workers": 2,
+            "num_workers": 4,
             "flavor": 10,
-            "training":true
+            "training":true,
+            "pin_memory":true
+        }
+    },
+    "test_data_loader": {
+        "type": "CIFAR_data_loader",
+        "args":{
+            "data_dir": "/scratch/mmoursi",
+            "batch_size": 512,
+            "num_workers": 4,
+            "flavor": 10,
+            "training":false
         }
     },
     "optimizer": {
@@ -42,12 +57,12 @@
         "metric":"val_accuracy"
     },
     "trainer": {
-        "epochs": 40,
-        "save_dir": "saved/",
-        "save_period": 40,
-        "verbosity": 1,
+        "epochs": 200,
+        "save_dir": "/scratch/mmoursi/lenet_train_results/",
+        "save_period": 200,
+        "verbosity": 2,
         "monitor": "max val_accuracy",
-        "early_stop": -1,
+        "early_stop": 20,
         "tensorboard": false
     },
     "extract": false,
