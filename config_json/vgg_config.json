@@ -1,7 +1,9 @@
 {
-    "name": "Img_VGGD",
+    "name": "devDDP",
     "n_gpu": 4,
-
+    "dist_backend":"nccl",
+    "dist_url":"tcp://127.0.0.1:34567",
+    "input_size":[3,224,224],
     "arch": {
         "type": "VGG_net",
         "args": {
@@ -12,17 +14,17 @@
     },
     "data_loader": {
         "type": "ImageNet_data_loader",
-        "args":{
-            "data_dir": "/scratch/mmoursi",
-            "batch_size": 512,
-            "shuffle": true,
+        "args": {
+            "data_dir": "/scratch/mmoursi/",
+            "batch_size": 256,
             "num_workers": 16,
-            "pin_memory":true
+            "pin_memory":true,
+            "training": true
         }
     },
     "optimizer": {
         "type": "SGD",
-        "args":{
+        "args": {
             "lr": 0.01,
             "momentum": 0.9,
             "weight_decay": 0.0005
@@ -33,21 +35,35 @@
         "accuracy", "top_k_acc"
     ],
     "lr_scheduler": {
-        "type": "ReduceLROnPlateau",
+        "type": "MultiStepLR",
         "args": {
-            "mode": "max",
-            "factor": 0.1,
+            "milestones": [30,60],
+            "gamma": 0.1,
             "verbose": true
-        },
-        "metric":"val_accuracy"
+        }
     },
     "trainer": {
-        "epochs": 10,
-        "save_dir": "saved/",
-        "save_period": 10,
-        "verbosity": 2,
+        "epochs": 90,
+        "save_dir": "/scratch/mmoursi/train_result/",
+        "save_period": 90,
+        "verbosity": 1,
         "monitor": "max val_accuracy",
         "early_stop": -1,
         "tensorboard": false
+    },
+    "extract": false,
+    "extractor":{
+        "PE":1,
+        "SIMD":1,
+        "DATAWIDTH":64,
+        "SEQUENCE_LENGTH":120000,
+        "CLASS_LABEL_BITS":1,
+        "MUL_BITS":16,
+        "MUL_INT_BITS":8,
+        "ACC_BITS":16,
+        "ACC_INT_BITS":8,
+        "IA_BITS":8,
+        "IA_INT_BITS":4
+
     }
 }
